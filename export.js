@@ -1,7 +1,8 @@
 /* 客户端导出：超清 PNG + JPG */
 
 const PNG_TARGET_WIDTH = 9000;
-const JPG_TARGET_WIDTH = 4000;
+const JPG_BASE_WIDTH = 4000;
+function jpgTargetWidth() { return (window.currentBoardWidth || 0) > 2000 ? 5000 : JPG_BASE_WIDTH; }
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -189,13 +190,13 @@ async function exportJPG() {
     const doc = getBoardDocument();
     const root = getCaptureRoot(doc);
     const cssW = (root.scrollWidth || 1400) + EXPORT_PAD * 2;
-    const preferred = Math.min(3, Math.max(2, Math.round(JPG_TARGET_WIDTH / cssW)));
+    const preferred = Math.min(3, Math.max(2, Math.round(jpgTargetWidth() / cssW)));
 
     const { dataUrl, scale } = await tryCapture(root, preferred);
-    const blob = await resizeToWidth(dataUrl, JPG_TARGET_WIDTH, 'image/jpeg', 0.92);
+    const blob = await resizeToWidth(dataUrl, jpgTargetWidth(), 'image/jpeg', 0.92);
     const state = window.BoardApp.getState();
     downloadBlob(blob, stampName(state.date, 'jpg'));
-    window.BoardApp.setStatus(`JPG 已下载（渲染 ${scale}×，宽 ${JPG_TARGET_WIDTH}px）`);
+    window.BoardApp.setStatus(`JPG 已下载（渲染 ${scale}×，宽 ${jpgTargetWidth()}px）`);
   } catch (e) {
     console.error(e);
     window.BoardApp.setStatus('JPG 导出失败：' + (e.message || e), true);

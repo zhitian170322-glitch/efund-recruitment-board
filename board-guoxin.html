@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261014-1210">
+<link rel="stylesheet" href="board-shared.css?v=20261014-1220">
 <style>  .summary { background:#fff; border-radius:24px; box-shadow:var(--shadow); padding:22px 28px; margin-bottom:22px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
   .summary-title { font-size:30px; font-weight:700; letter-spacing:-0.02em; line-height:1.3; }
   .summary-stats { display:flex; gap:12px; flex-shrink:0; }
@@ -37,12 +37,31 @@
   .skills { font-size: 24px; color: #000; font-weight: 600; line-height: 1.5; }
   .meta { font-size: 22px; color: #000; font-weight: 700; }
   .meta i { color: #6e6e73; }
+
+  /* 横屏 */
+  .wrap { max-width: none; width: 2928px; }
+  .header { align-items: center; gap: 32px; }
+  .header h1 { flex-shrink: 0; }
+  .header .summary { flex: 1; margin: 0; padding: 16px 28px; }
+  .roles { grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  .interviews { grid-template-columns: repeat(6, 1fr) !important; }
+  .chips { flex-wrap: nowrap; overflow: hidden; }
+  .chip { white-space: nowrap; }
+  .metas { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 10px; }
+  .metas .meta { margin-top: 0; }
 </style>
 </head>
 <body>
   <div class="wrap" id="board">
     <div class="header">
       <h1 id="board-title">招聘看板</h1>
+      <div class="summary" id="summary">
+      <div class="summary-title" id="sum-title"></div>
+      <div class="summary-stats">
+        <div class="stat"><b id="sum-roles">0</b><span>在招岗位</span></div>
+        <div class="stat red"><b id="sum-target">0</b><span>当日简历目标</span></div>
+      </div>
+    </div>
       <div class="header-date" id="board-date">—</div>
     </div>
     <section class="celebrate-block" id="cele-block" hidden>
@@ -72,18 +91,11 @@
 
     <section class="roles-block">
       <div class="section-head"><h2>重点岗位</h2><span class="hint" id="role-hint">0 岗</span></div>
-      <div class="summary" id="summary">
-      <div class="summary-title" id="sum-title"></div>
-      <div class="summary-stats">
-        <div class="stat"><b id="sum-roles">0</b><span>在招岗位</span></div>
-        <div class="stat red"><b id="sum-target">0</b><span>当日简历目标</span></div>
-      </div>
-    </div>
       <div class="roles" id="role-list"></div>
     </section>
     <footer>数据来自招聘需求表</footer>
   </div>
-<script src="board-shared.js?v=20261014-1210"></script>
+<script src="board-shared.js?v=20261014-1220"></script>
 <script>
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function rich(s){return esc(s).replace(/\*\*([\s\S]+?)\*\*/g,'<span class="red">$1</span>').replace(/\n/g,'<br>');}
@@ -111,7 +123,7 @@
       rows.forEach(function(r,i){
         var title=esc(x.role||'')+(rows.length>1?'<span class="seq">'+(i+1)+'/'+rows.length+'</span>':'')+badges(x.roleNote);
         var chips='';
-        if(x.target)chips+='<span class="chip target">简历目标 '+esc(plain(x.target))+(rows.length>1?'（岗位合计）':'')+'</span>';
+        if(x.target)chips+='<span class="chip target">简历目标 '+esc(plain(x.target))+(rows.length>1?'（合计）':'')+'</span>';
         if(x.salary)chips+='<span class="chip">'+esc(plain(x.salary))+'</span>';
         if(x.years)chips+='<span class="chip">'+esc(plain(x.years))+'</span>';
         if(x.team)chips+='<span class="chip">'+esc(plain(x.team))+'</span>';
@@ -119,8 +131,8 @@
           (r.pm?'<div class="role-team">'+rich(r.pm)+'</div>':'')+
           (chips?'<div class="chips">'+chips+'</div>':'')+
           '<div class="skills">'+(r.skills?rich(r.skills):'&nbsp;')+'</div>'+
-          (r.interview?'<div class="meta"><i>面试</i>'+rich(r.interview)+'</div>':'')+
-          (r.address?'<div class="meta"><i>地址</i>'+rich(r.address)+'</div>':'')+'</article>');
+          ((r.interview||r.address)?'<div class="metas">'+(r.interview?'<div class="meta"><i>面试</i>'+rich(r.interview)+'</div>':'')+
+          (r.address?'<div class="meta"><i>地址</i>'+rich(r.address)+'</div>':'')+'</div>':'')+'</article>');
       });});
     document.getElementById('role-hint').textContent=groups.length+' 岗 · '+cards.length+' 个需求';
     document.getElementById('role-list').innerHTML=cards.length?cards.join(''):'<div class="empty-hint" style="grid-column:1/-1">暂无岗位，在左侧添加</div>';

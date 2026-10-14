@@ -121,7 +121,7 @@ const BoardTemplates = {
   guoxin: {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
-    boardWidth: 1400,
+    boardWidth: 3000,
     formSelector: '#form-guoxin',
     ocrUploads: { a: '国信需求表截图', b: null },
     sample() { return structuredClone(GUOXIN_SAMPLE); },

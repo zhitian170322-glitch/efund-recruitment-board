@@ -150,6 +150,14 @@ function renderClientSelect() {
     .map((n) => `<option value="${escapeAttr(n)}"${n === clientStore.current ? ' selected' : ''}>${escapeText(n)}</option>`)
     .join('');
   $('#btn-client-delete').disabled = Object.keys(clientStore.clients).length <= 1;
+  renderClientPills();
+}
+function renderClientPills() {
+  const nav = $('#client-pills');
+  if (!nav) return;
+  nav.innerHTML = Object.keys(clientStore.clients).map((n) =>
+    `<button type="button" class="client-pill${n === clientStore.current ? ' active' : ''}" data-client="${escapeAttr(n)}" title="${escapeAttr(n)}"${n === clientStore.current ? ' aria-current="true"' : ''}>${escapeText(n)}</button>`
+  ).join('') + '<button type="button" class="client-pill add" id="btn-pill-add" title="新增客户" aria-label="新增客户">+</button>';
 }
 function loadClient(name) {
   clientStore.current = name;
@@ -712,6 +720,13 @@ function bindEvents() {
   });
 
   $('#client-select').addEventListener('change', (e) => switchClient(e.target.value));
+  $('#client-pills')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.client-pill');
+    if (!btn) return;
+    if (btn.id === 'btn-pill-add') { addClient(); return; }
+    const n = btn.dataset.client;
+    if (n && n !== clientStore.current) switchClient(n);
+  });
   $('#btn-client-add').addEventListener('click', addClient);
   $('#btn-client-rename').addEventListener('click', renameClient);
   $('#btn-client-delete').addEventListener('click', deleteClient);

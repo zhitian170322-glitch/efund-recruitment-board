@@ -364,6 +364,25 @@
   #client-dialog h3 { font-size: 18px; font-weight: 650; margin-bottom: 14px; letter-spacing: -0.02em; }
   .dlg-error { color: var(--urgent); font-size: 12px; font-weight: 600; min-height: 1.2em; margin-top: 8px; }
 
+
+  .client-pills {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 6px; margin-bottom: 16px;
+    background: rgba(0,0,0,.045); border-radius: 16px;
+    position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px);
+  }
+  .client-pill {
+    appearance: none; border: none; cursor: pointer; font-family: inherit;
+    font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: #1d1d1f;
+    background: transparent; padding: 7px 14px; border-radius: 11px;
+    max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background .15s, box-shadow .15s, color .15s;
+  }
+  .client-pill:hover { background: rgba(255,255,255,.6); }
+  .client-pill.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 1px rgba(0,0,0,.04); color: #0071e3; }
+  .client-pill.add { width: 32px; padding: 7px 0; font-size: 16px; line-height: 1; color: #6e6e73; }
+  .client-pill.add:hover { color: #0071e3; }
+
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -392,6 +411,7 @@
 
   <div class="layout">
     <aside class="panel">
+      <nav class="client-pills" id="client-pills" aria-label="客户切换"></nav>
       <div class="panel-section">
         <h2>客户</h2>
         <div class="field-row">

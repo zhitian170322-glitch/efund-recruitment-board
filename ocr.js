@@ -92,6 +92,47 @@ function stripJsonFences(text) {
   return s;
 }
 
+// Post-process a card role from OCR: pull PM names into team, strip column-name prefixes and stray numeric columns
+const PM_RE = /(?:项目经理|负责人|用人经理|PM)\s*[:：]\s*([^；;，,\n]+)/i;
+function stripPrefix(t) {
+  return String(t || '').replace(/^\s*(?:简历筛选方向|用人经理偏好|备注要求|备注|进展)\s*[:：]\s*/, '').trim();
+}
+function cleanCardRole(r) {
+  let title = String(r?.title || '').trim();
+  let team = String(r?.team || r?.pm || r?.manager || '').trim();
+  let note = String(r?.note || r?.direction || '').trim();
+  let progress = String(r?.progress || '').trim();
+  const urg = String(r?.urgency || '');
+  const rawAll = String(r?.note || '') + '；' + String(r?.progress || '');
+  const urgRaw = rawAll.match(/紧急程度\s*[:：]\s*([^；;，,\s]*)/);
+  // PM embedded in note/progress
+  for (const field of ['note', 'progress']) {
+    const v = field === 'note' ? note : progress;
+    const m = v.match(PM_RE);
+    if (m) {
+      if (!team) team = m[1].trim();
+      const cleaned = v.replace(PM_RE, '').replace(/^[；;，,\s]+|[；;，,\s]+$/g, '');
+      if (field === 'note') note = cleaned; else progress = cleaned;
+    }
+  }
+  team = team.replace(/^(?:项目经理|负责人|用人经理|PM)\s*[:：]\s*/i, '').trim();
+  // split "简历筛选方向：...；备注：xxx" → note / progress
+  const remark = note.match(/[；;]\s*备注\s*[:：]\s*(.*)$/);
+  if (remark) {
+    note = note.slice(0, remark.index).trim();
+    if (!progress || /每日可推|已推荐|紧急程度/.test(progress)) progress = remark[1].trim();
+  }
+  note = stripPrefix(note);
+  // drop numeric-column noise from progress
+  let featured = !!r?.featured || /紧急|重点/.test(urg);
+  if (urgRaw && /紧急|重点/.test(urgRaw[1])) featured = true;
+  progress = progress
+    .replace(/(?:每日可推|已推荐|紧急程度)\s*[:：]\s*[^；;，,]*[；;，,]?\s*/g, '')
+    .replace(/^[；;，,\s]+|[；;，,\s]+$/g, '');
+  progress = stripPrefix(progress);
+  return { title, team, note, progress, featured };
+}
+
 function normalizeParsed(raw) {
   const out = {
     date: typeof raw.date === 'string' ? raw.date.trim() : '',
@@ -106,13 +147,7 @@ function normalizeParsed(raw) {
     })).filter((iv) => iv.name || iv.when);
   }
   if (Array.isArray(raw.roles)) {
-    out.roles = raw.roles.map((r) => ({
-      title: String(r?.title || '').trim(),
-      team: String(r?.team || '').trim(),
-      note: String(r?.note || '').trim(),
-      progress: String(r?.progress || '').trim(),
-      featured: !!r?.featured
-    })).filter((r) => r.title || r.team || r.note || r.progress);
+    out.roles = raw.roles.map(cleanCardRole).filter((r) => r.title || r.team || r.note || r.progress);
   }
   return out;
 }

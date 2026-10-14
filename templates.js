@@ -55,7 +55,15 @@ const BoardTemplates = {
       parts.push('轮次只能是「一面」或「二面」。不要提取「需求人数」。');
       parts.push('JSON 结构必须严格为：');
       parts.push('{"date":"2026年10月14日或空字符串","interviews":[{"name":"","round":"一面|二面","when":""}],"roles":[{"title":"","team":"","note":"","progress":"","featured":false}]}');
-      if (hasA) parts.push('其中一张图是「优先岗位 / 招聘进度表」：把列映射为 title=岗位、team=团队、note=用人经理偏好（或备注要求）、progress=进展；若有重点/加急可设 featured=true，否则 false。请把该表填入 roles。');
+      if (hasA) {
+        parts.push('其中一张图是「优先岗位 / 招聘进度表 / 需求表」，每一行对应 roles 里的一项，列映射如下：');
+        parts.push('- title = 「岗位」列');
+        parts.push('- team = 「团队」列；如果表里没有团队列，而有「项目经理」「负责人」「用人经理」「PM」列，就把该列的人名原样填进 team（多人用「、」连接）。team 只放团队名或人名，不要加「项目经理：」等前缀');
+        parts.push('- note = 「用人经理偏好」或「简历筛选方向」列的原文，不要加「简历筛选方向：」「备注：」等列名前缀，不要把项目经理姓名写进 note');
+        parts.push('- progress = 「进展」列；没有进展列时填「备注」列的原文（不带前缀），都没有就留空。不要把「每日可推」「已推荐」「紧急程度」写进 progress');
+        parts.push('- featured = 「紧急程度」为「紧急」或「重点推进」（或标了重点/加急）时 true，「一般」或没有时 false');
+        parts.push('「每日可推」「已推荐」「序号」列不需要返回。请把该表填入 roles。');
+      }
       if (hasB) parts.push('其中一张图是「今日面试跟进」：提取候选人姓名、一面/二面、时间（when），填入 interviews；若图中有日期也可填 date。');
       if (hasA && !hasB) parts.push('本次只有岗位表，interviews 请返回空数组 []，date 可空。');
       if (hasB && !hasA) parts.push('本次只有面试跟进图，roles 请返回空数组 []。');

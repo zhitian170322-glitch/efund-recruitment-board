@@ -2,7 +2,7 @@
 
 const PNG_TARGET_WIDTH = 9000;
 const JPG_BASE_WIDTH = 4000;
-function jpgTargetWidth() { return (window.currentBoardWidth || 0) > 2000 ? 5000 : JPG_BASE_WIDTH; }
+function jpgTargetWidth() { const w = window.currentBoardWidth || 0; return w > 3000 ? 6000 : (w > 2000 ? 5000 : JPG_BASE_WIDTH); }
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));

@@ -124,7 +124,7 @@ const BoardTemplates = {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
     boardWidth: 1900,
-    boardWidthLandscape: 3000,
+    boardWidthLandscape: 3600,
     defaultOrientation: 'landscape',
     formSelector: '#form-guoxin',
     ocrUploads: { a: '国信需求表截图', b: null },

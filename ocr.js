@@ -1,4 +1,4 @@
-/* 易方达招聘看板 — DeepSeek 识图填表（Key 仅存本机 localStorage） */
+/* 招聘看板 — DeepSeek 识图填表（Key 仅存本机 localStorage） */
 
 const OCR_STORAGE_KEY = 'efund_board_deepseek_settings';
 const OCR_WARN_KEY = 'efund_board_deepseek_key_warned';
@@ -61,7 +61,7 @@ function fileToDataUrl(file) {
 
 function buildOcrPrompt(hasRoles, hasIv) {
   const parts = [];
-  parts.push('你是招聘看板信息提取助手。请从用户上传的截图中提取内容，只返回 JSON，不要解释，不要用 markdown 代码块。');
+  parts.push('你是招聘看板信息提取助手。请从用户上传的招聘看板截图中提取内容，只返回 JSON，不要解释，不要用 markdown 代码块。');
   parts.push('不要编造；截图里没有的字段留空字符串或空数组。');
   parts.push('轮次只能是「一面」或「二面」。不要提取「需求人数」。');
   parts.push('JSON 结构必须严格为：');
@@ -233,13 +233,15 @@ async function onRecognize() {
   const keyEl = document.getElementById('ocr-api-key');
   const baseEl = document.getElementById('ocr-base-url');
   const modelEl = document.getElementById('ocr-model');
-  if (keyEl) settings.apiKey = keyEl.value.trim();
+  if (keyEl && keyEl.value.trim()) settings.apiKey = keyEl.value.trim();
   if (baseEl) settings.baseUrl = (baseEl.value.trim() || DEFAULT_OCR_SETTINGS.baseUrl).replace(/\/+$/, '');
   if (modelEl) settings.model = modelEl.value.trim() || DEFAULT_OCR_SETTINGS.model;
   saveOcrSettings(settings);
+  refreshKeyView();
 
   if (!settings.apiKey) {
-    setOcrStatus('请先在「DeepSeek 设置」里填写 API Key', true);
+    setOcrStatus('请先在「⚙ AI识别设置」里保存 API Key', true);
+    const det = document.getElementById('ai-settings'); if (det) det.open = true;
     return;
   }
   if (!uploadedRolesDataUrl && !uploadedIvDataUrl) {
@@ -276,30 +278,60 @@ async function onRecognize() {
   }
 }
 
+function refreshKeyView() {
+  const has = !!loadOcrSettings().apiKey;
+  const saved = document.getElementById('key-saved-view');
+  const input = document.getElementById('key-input-view');
+  if (saved) saved.hidden = !has;
+  if (input) input.hidden = has;
+  const keyEl = document.getElementById('ocr-api-key');
+  if (keyEl) keyEl.value = '';
+}
+
 function bindOcrUi() {
   const settings = loadOcrSettings();
   const keyEl = document.getElementById('ocr-api-key');
   const baseEl = document.getElementById('ocr-base-url');
   const modelEl = document.getElementById('ocr-model');
-  if (keyEl) keyEl.value = settings.apiKey;
   if (baseEl) baseEl.value = settings.baseUrl;
   if (modelEl) modelEl.value = settings.model;
+  refreshKeyView();
 
-  const persist = () => {
+  const persistMeta = () => {
+    const cur = loadOcrSettings();
     saveOcrSettings({
-      apiKey: keyEl ? keyEl.value.trim() : '',
+      apiKey: cur.apiKey,
       baseUrl: baseEl ? baseEl.value.trim() : DEFAULT_OCR_SETTINGS.baseUrl,
       model: modelEl ? modelEl.value.trim() : DEFAULT_OCR_SETTINGS.model
     });
   };
+  [baseEl, modelEl].forEach((el) => el && el.addEventListener('change', persistMeta));
 
-  [keyEl, baseEl, modelEl].forEach((el) => {
-    if (!el) return;
-    el.addEventListener('change', () => {
-      persist();
-      if (el === keyEl && el.value.trim()) maybeWarnAboutKey();
-    });
-    el.addEventListener('blur', persist);
+  const saveKeyBtn = document.getElementById('btn-ocr-save-key');
+  if (saveKeyBtn) saveKeyBtn.addEventListener('click', () => {
+    const v = keyEl ? keyEl.value.trim() : '';
+    if (!v) { setOcrStatus('请先粘贴 Key', true); return; }
+    const cur = loadOcrSettings();
+    cur.apiKey = v;
+    saveOcrSettings(cur);
+    maybeWarnAboutKey();
+    refreshKeyView();
+    setOcrStatus('Key 已保存');
+  });
+  const changeBtn = document.getElementById('btn-ocr-change-key');
+  if (changeBtn) changeBtn.addEventListener('click', () => {
+    document.getElementById('key-saved-view').hidden = true;
+    document.getElementById('key-input-view').hidden = false;
+    if (keyEl) { keyEl.value = ''; keyEl.focus(); }
+  });
+  const clearKeyBtn = document.getElementById('btn-ocr-clear-key');
+  if (clearKeyBtn) clearKeyBtn.addEventListener('click', () => {
+    if (!confirm('确定清除本机保存的 Key？')) return;
+    const cur = loadOcrSettings();
+    cur.apiKey = '';
+    saveOcrSettings(cur);
+    refreshKeyView();
+    setOcrStatus('已清除本机 Key');
   });
 
   const rolesInput = document.getElementById('ocr-roles-file');
@@ -348,15 +380,6 @@ function bindOcrUi() {
     hidePreview();
     setOcrStatus('已取消填入');
   });
-
-  const clearKeyBtn = document.getElementById('btn-ocr-clear-key');
-  if (clearKeyBtn) {
-    clearKeyBtn.addEventListener('click', () => {
-      if (keyEl) keyEl.value = '';
-      persist();
-      setOcrStatus('已清除本机 Key');
-    });
-  }
 
   updateFileHints();
 }

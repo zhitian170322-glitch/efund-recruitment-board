@@ -1,4 +1,4 @@
-/* 易方达招聘看板生成器 — 表单状态与看板绑定 */
+/* 招聘看板生成器 — 多客户表单状态与看板绑定 */
 
 const DEFAULT_DATA = {
   date: '2026年10月14日',
@@ -65,6 +65,102 @@ const DEFAULT_DATA = {
   ]
 };
 
+
+const CLIENTS_KEY = 'recruit_board_clients_v1';
+const DEFAULT_CLIENT = '易方达';
+let clientStore = null; // { current, clients: { name: {date, interviews, roles} } }
+
+function todayCN() {
+  const d = new Date();
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+function emptyClientData() {
+  return { date: todayCN(), interviews: [], roles: [] };
+}
+function loadClientStore() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CLIENTS_KEY) || 'null');
+    if (raw && raw.clients && Object.keys(raw.clients).length) {
+      if (!raw.clients[raw.current]) raw.current = Object.keys(raw.clients)[0];
+      return raw;
+    }
+  } catch (e) { /* ignore */ }
+  // migrate: no previous per-client data existed; seed 易方达 with sample
+  return { current: DEFAULT_CLIENT, clients: { [DEFAULT_CLIENT]: structuredClone(DEFAULT_DATA) } };
+}
+function saveClientStore() {
+  try {
+    clientStore.clients[clientStore.current] = {
+      date: state.date || '', interviews: state.interviews || [], roles: state.roles || []
+    };
+    localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
+  } catch (e) { console.warn('save failed', e); }
+}
+function getClient() { return clientStore ? clientStore.current : DEFAULT_CLIENT; }
+function boardPayload() { return { ...state, client: getClient() }; }
+
+function renderClientSelect() {
+  const sel = $('#client-select');
+  if (!sel) return;
+  sel.innerHTML = Object.keys(clientStore.clients)
+    .map((n) => `<option value="${escapeAttr(n)}"${n === clientStore.current ? ' selected' : ''}>${escapeText(n)}</option>`)
+    .join('');
+  $('#btn-client-delete').disabled = Object.keys(clientStore.clients).length <= 1;
+}
+function loadClient(name) {
+  clientStore.current = name;
+  const d = clientStore.clients[name] || emptyClientData();
+  state = { date: d.date || '', interviews: d.interviews || [], roles: d.roles || [] };
+  renderClientSelect();
+  renderEditors();
+  pushToBoard();
+  localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
+}
+function switchClient(name) {
+  collectStateFromForm();
+  saveClientStore();
+  loadClient(name);
+  setStatus(`已切换到「${name}」`);
+}
+function askClientName(msg, def) {
+  const n = (prompt(msg, def || '') || '').trim();
+  if (!n) return null;
+  if (clientStore.clients[n] && n !== def) { alert('已有同名客户'); return null; }
+  return n;
+}
+function addClient() {
+  const n = askClientName('新客户名称（例如：华夏）');
+  if (!n) return;
+  collectStateFromForm();
+  saveClientStore();
+  clientStore.clients[n] = emptyClientData();
+  loadClient(n);
+  setStatus(`已新增客户「${n}」`);
+}
+function renameClient() {
+  const old = clientStore.current;
+  const n = askClientName('重命名客户', old);
+  if (!n || n === old) return;
+  collectStateFromForm();
+  const rebuilt = {};
+  for (const k of Object.keys(clientStore.clients)) rebuilt[k === old ? n : k] = clientStore.clients[k];
+  clientStore.clients = rebuilt;
+  clientStore.current = n;
+  saveClientStore();
+  renderClientSelect();
+  pushToBoard();
+  setStatus(`已重命名为「${n}」`);
+}
+function deleteClient() {
+  const names = Object.keys(clientStore.clients);
+  if (names.length <= 1) { alert('至少保留一个客户'); return; }
+  const cur = clientStore.current;
+  if (!confirm(`确定删除客户「${cur}」及其数据？`)) return;
+  delete clientStore.clients[cur];
+  loadClient(Object.keys(clientStore.clients)[0]);
+  setStatus(`已删除「${cur}」`);
+}
+
 let state = structuredClone(DEFAULT_DATA);
 let boardReady = false;
 let pendingPush = false;
@@ -77,6 +173,7 @@ function getIframe() {
 }
 
 function pushToBoard() {
+  if (clientStore) saveClientStore();
   const iframe = getIframe();
   if (!iframe || !iframe.contentWindow) {
     pendingPush = true;
@@ -88,7 +185,7 @@ function pushToBoard() {
   }
   try {
     if (iframe.contentWindow.renderBoard) {
-      iframe.contentWindow.renderBoard(state);
+      iframe.contentWindow.renderBoard(boardPayload());
       boardReady = true;
       pendingPush = false;
       return;
@@ -97,7 +194,7 @@ function pushToBoard() {
     /* cross-origin or not loaded */
   }
   try {
-    iframe.contentWindow.postMessage({ type: 'BOARD_DATA', payload: state }, '*');
+    iframe.contentWindow.postMessage({ type: 'BOARD_DATA', payload: boardPayload() }, '*');
   } catch (e) {
     console.warn('pushToBoard failed', e);
   }
@@ -244,11 +341,11 @@ function removeRole(idx) {
 
 function exportJSON() {
   collectStateFromForm();
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ client: getClient(), ...state }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   const stamp = (state.date || 'board').replace(/[^\d\w\u4e00-\u9fff-]+/g, '_');
   a.href = URL.createObjectURL(blob);
-  a.download = `招聘看板_${stamp}.json`;
+  a.download = `${getClient()}招聘看板_${stamp}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -259,6 +356,14 @@ function importJSON(file) {
     try {
       const data = JSON.parse(reader.result);
       if (!data || typeof data !== 'object') throw new Error('格式不对');
+      const cname = typeof data.client === 'string' ? data.client.trim() : '';
+      if (cname && cname !== getClient()) {
+        collectStateFromForm();
+        saveClientStore();
+        if (!clientStore.clients[cname]) clientStore.clients[cname] = emptyClientData();
+        clientStore.current = cname;
+        renderClientSelect();
+      }
       state = {
         date: data.date || '',
         interviews: Array.isArray(data.interviews) ? data.interviews : [],
@@ -266,7 +371,7 @@ function importJSON(file) {
       };
       renderEditors();
       pushToBoard();
-      setStatus('已导入 JSON');
+      setStatus(`已导入到「${getClient()}」`);
     } catch (e) {
       setStatus('导入失败：JSON 无效', true);
     }
@@ -306,6 +411,10 @@ function bindEvents() {
     if (!Number.isNaN(idx)) removeRole(idx);
   });
 
+  $('#client-select').addEventListener('change', (e) => switchClient(e.target.value));
+  $('#btn-client-add').addEventListener('click', addClient);
+  $('#btn-client-rename').addEventListener('click', renameClient);
+  $('#btn-client-delete').addEventListener('click', deleteClient);
   $('#btn-add-iv').addEventListener('click', addInterview);
   $('#btn-add-role').addEventListener('click', addRole);
   $('#btn-refresh').addEventListener('click', () => {
@@ -382,13 +491,14 @@ window.BoardApp = {
   pushToBoard,
   setStatus,
   getIframe,
-  applyOcrResult
+  applyOcrResult,
+  getClient
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  state = structuredClone(DEFAULT_DATA);
-  renderEditors();
+  clientStore = loadClientStore();
   bindEvents();
+  loadClient(clientStore.current);
   // Initial push after short delay in case iframe loads first
   setTimeout(pushToBoard, 100);
 });

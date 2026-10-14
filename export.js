@@ -8,8 +8,11 @@ function delay(ms) {
 }
 
 function stampName(dateStr, ext) {
-  const stamp = (dateStr || 'board').replace(/[^\d\w\u4e00-\u9fff-]+/g, '_');
-  return `易方达招聘看板_${stamp}.${ext}`;
+  const client = (window.BoardApp && window.BoardApp.getClient && window.BoardApp.getClient()) || '';
+  const m = String(dateStr || '').match(/(\d{1,2})\s*月\s*(\d{1,2})/);
+  const stamp = m ? m[1].padStart(2, '0') + m[2].padStart(2, '0') : (dateStr || 'board').replace(/[^\d\w\u4e00-\u9fff-]+/g, '_');
+  const safeClient = client.replace(/[\\/:*?"<>|]+/g, '_');
+  return `${safeClient}招聘看板-${stamp}.${ext}`;
 }
 
 function downloadBlob(blob, filename) {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>易方达招聘看板</title>
+<title>招聘看板</title>
 <style>
   :root {
     --bg: #f5f5f7;
@@ -308,7 +308,7 @@
 <body>
   <div class="wrap" id="board">
     <div class="header">
-      <h1>易方达招聘看板</h1>
+      <h1 id="board-title">招聘看板</h1>
       <div class="header-date" id="board-date">—</div>
     </div>
 
@@ -359,6 +359,8 @@
       var roles = Array.isArray(data.roles) ? data.roles : [];
 
       document.getElementById('board-date').textContent = data.date || '—';
+      var _bt = (data.client || '') + '招聘看板';
+      document.getElementById('board-title').textContent = _bt;
       document.getElementById('iv-hint').textContent = interviews.length + ' 人';
 
       var featuredCount = roles.filter(function (r) { return r.featured; }).length;
@@ -419,7 +421,7 @@
         }).join('');
       }
 
-      document.title = '易方达招聘看板 · ' + (data.date || '');
+      document.title = (data.client || '') + '招聘看板 · ' + (data.date || '');
     }
 
     window.renderBoard = renderBoard;

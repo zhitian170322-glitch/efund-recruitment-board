@@ -46,12 +46,28 @@ function getCaptureRoot(doc) {
   return doc.getElementById('board') || doc.body;
 }
 
+const EXPORT_PAD = 56; // CSS px breathing room on every side
+
 async function captureWithScale(root, pixelRatio, backgroundColor) {
   if (typeof htmlToImage === 'undefined') {
     throw new Error('导出库未加载，请检查网络或改用本地服务打开');
   }
+  // Use the real layout size (unaffected by the preview's scale transform on the iframe)
+  const contentW = Math.ceil(Math.max(root.scrollWidth, root.offsetWidth));
+  const contentH = Math.ceil(Math.max(root.scrollHeight, root.offsetHeight));
   const opts = {
     pixelRatio,
+    width: contentW + EXPORT_PAD * 2,
+    height: contentH + EXPORT_PAD * 2,
+    style: {
+      boxSizing: 'content-box',
+      width: contentW + 'px',
+      maxWidth: 'none',
+      margin: '0',
+      padding: EXPORT_PAD + 'px',
+      background: backgroundColor || '#f5f5f7',
+      transform: 'none'
+    },
     backgroundColor: backgroundColor || '#f5f5f7',
     cacheBust: true,
     // Skip external fonts issues on file://
@@ -127,7 +143,7 @@ async function exportPNG() {
     const doc = getBoardDocument();
     const root = getCaptureRoot(doc);
     // Prefer scale that yields ~9000w from ~1400–1800 content
-    const cssW = root.getBoundingClientRect().width || 1400;
+    const cssW = (root.scrollWidth || 1400) + EXPORT_PAD * 2;
     let preferred = Math.min(5, Math.max(2, Math.round(PNG_TARGET_WIDTH / cssW)));
     if (preferred < 5 && cssW * 5 <= 12000) preferred = 5;
 
@@ -171,7 +187,7 @@ async function exportJPG() {
 
     const doc = getBoardDocument();
     const root = getCaptureRoot(doc);
-    const cssW = root.getBoundingClientRect().width || 1400;
+    const cssW = (root.scrollWidth || 1400) + EXPORT_PAD * 2;
     const preferred = Math.min(3, Math.max(2, Math.round(JPG_TARGET_WIDTH / cssW)));
 
     const { dataUrl, scale } = await tryCapture(root, preferred);

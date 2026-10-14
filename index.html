@@ -537,7 +537,7 @@
       const frame = document.getElementById('board-frame');
       if (!shell || !frame) return;
       const shellW = shell.clientWidth;
-      const scale = Math.min(0.92, shellW / 1400);
+      const scale = Math.min(1, shellW / 1400);
       frame.style.transform = 'scale(' + scale + ')';
       frame.style.width = '1400px';
       // Approximate board height; iframe scrolls inside if taller

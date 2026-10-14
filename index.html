@@ -431,6 +431,13 @@
   }
   .pz-remove:hover { background: #ff3b30; }
 
+
+  .field-row.three-even { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .gx-rows { margin: 4px 0 8px; display: grid; gap: 8px; }
+  .gx-row { border: 1px solid rgba(0,0,0,.06); border-radius: 12px; padding: 10px 12px; background: #fff; }
+  .gx-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .gx-row textarea { min-height: 44px; }
+
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -622,20 +629,23 @@
         <p class="hint-tip">勾选「重点岗位」会显示红色「重点」标签。进展不用写「进展：」前缀。</p>
       </div>
       </div>
-      <div id="form-demand" hidden>
+      <div id="form-guoxin" hidden>
         <div class="panel-section">
-          <h2>需求表 <span class="count"><span id="dm-row-count">0</span> 条</span></h2>
-          <div class="field-row two-even">
-            <div><label for="dm-count">今日需求数</label><input type="text" id="dm-count" inputmode="numeric"></div>
-            <div><label for="dm-target">今日简历目标</label><input type="text" id="dm-target" inputmode="numeric"></div>
+          <h2>国信看板 <span class="count"><span id="gx-count">0</span> 组</span></h2>
+          <div class="field-row">
+            <label for="gx-title">表格标题</label>
+            <input type="text" id="gx-title" placeholder="当日需求重点(活跃岗位)-重点看“紧急状态”">
           </div>
-          <p class="hint-tip" style="margin:-2px 0 12px">留空则自动：需求数 = 行数，简历目标 = 每日可推合计。</p>
-          <div id="dm-editor"></div>
+          <div class="section-actions" style="margin:-2px 0 12px">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-gx-red" title="选中文字后点这里"><span style="color:#e5001c;font-weight:700">A</span> 选中文字标红</button>
+          </div>
+          <p class="hint-tip" style="margin:-4px 0 12px">在任何格子里用 <b>**文字**</b> 标红，或选中文字后点「选中文字标红」。格子里可换行。</p>
+          <div id="gx-editor"></div>
           <div class="section-actions">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-add-dm">添加需求</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-dm-sample">载入示例</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-add-gx">添加岗位组</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-gx-sample">载入示例</button>
           </div>
-          <p class="hint-tip">相邻的同一岗位会自动分组编号、同色显示；用 ↑ ↓ 调整顺序。紧急 / 重点推进 标红。</p>
+          <p class="hint-tip">一个岗位组 = 岗位 / 目标 / 薪资 / 年限合并成一格，下面每个子行有自己的重点技能、面试方式、地址、项目经理。相邻子行面试方式或地址相同会自动合并。</p>
         </div>
       </div>
     </aside>
@@ -647,7 +657,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261014-1120" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261014-1130" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -668,11 +678,11 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261014-1120";</script>
-  <script src="templates.js?v=20261014-1120"></script>
-  <script src="app.js?v=20261014-1120"></script>
-  <script src="ocr.js?v=20261014-1120"></script>
-  <script src="export.js?v=20261014-1120"></script>
+  <script>window.BUILD_VERSION = "20261014-1130";</script>
+  <script src="templates.js?v=20261014-1130"></script>
+  <script src="app.js?v=20261014-1130"></script>
+  <script src="ocr.js?v=20261014-1130"></script>
+  <script src="export.js?v=20261014-1130"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

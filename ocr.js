@@ -216,9 +216,9 @@ async function callDeepSeekVision({ apiKey, baseUrl, model, dataUrls, hasRoles, 
   } catch {
     throw new Error('模型返回不是合法 JSON，请重试或换更清晰的截图');
   }
-  if (templateType === 'demandTable') {
-    const dm = normalizeDemand(parsed);
-    return { date: typeof parsed.date === 'string' ? parsed.date.trim() : '', demandCount: dm.demandCount, resumeTarget: dm.resumeTarget, rows: dm.rows };
+  if (templateType === 'guoxin') {
+    const gx = normalizeGuoxin(parsed);
+    return { date: typeof parsed.date === 'string' ? parsed.date.trim() : '', title: typeof parsed.title === 'string' ? parsed.title.trim() : '', groups: gx.groups };
   }
   return normalizeParsed(parsed);
 }

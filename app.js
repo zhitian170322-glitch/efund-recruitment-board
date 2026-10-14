@@ -133,13 +133,13 @@ function emptyClientData(templateType) {
   return {
     templateType: t,
     date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate(),
-    demand: normalizeDemand(t === 'demandTable' ? BoardTemplates.demandTable.empty() : null)
+    guoxin: normalizeGuoxin(t === 'guoxin' ? BoardTemplates.guoxin.empty() : null)
   };
 }
 function eFundDefault() {
   const d = structuredClone(DEFAULT_DATA);
   d.templateType = 'cards';
-  d.demand = normalizeDemand(null);
+  d.guoxin = normalizeGuoxin(null);
   return d;
 }
 function loadClientStore() {
@@ -372,8 +372,8 @@ function collectStateFromForm() {
     cheer: ($('#cele-cheer')?.value || '').trim(),
     people
   };
-  const demand = collectDemandFromForm();
-  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, demand };
+  const guoxin = collectGuoxinFromForm();
+  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, guoxin, savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
   return state;
 }
 
@@ -466,75 +466,108 @@ function celeCardHTML(p, idx) {
 }
 
 
-function demandRowHTML(r, idx, total) {
-  const opts = URGENCY_OPTIONS.map((u) => `<option value="${u}"${r.urgency === u ? ' selected' : ''}>${u}</option>`).join('');
+// ---- 国信看板编辑器 ----
+let lastRichField = null;
+function gxRowHTML(r, gi, ri, total) {
   return `
-    <div class="item-card" data-idx="${idx}">
+      <div class="gx-row" data-g="${gi}" data-r="${ri}">
+        <div class="gx-row-head">
+          <span class="item-label">子行 ${ri + 1}</span>
+          <span class="row-actions">
+            <button type="button" class="btn btn-ghost btn-sm" data-action="gx-row-up"${ri === 0 ? ' disabled' : ''} title="上移">↑</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-action="gx-row-down"${ri === total - 1 ? ' disabled' : ''} title="下移">↓</button>
+            <button type="button" class="btn btn-danger btn-sm" data-action="gx-row-del"${total <= 1 ? ' disabled' : ''}>删除</button>
+          </span>
+        </div>
+        <div class="field-row"><label>重点技能</label><textarea data-f="skills" rows="3">${escapeText(r.skills)}</textarea></div>
+        <div class="field-row three-even">
+          <div><label>面试方式</label><textarea data-f="interview" rows="2">${escapeText(r.interview)}</textarea></div>
+          <div><label>详细地址</label><textarea data-f="address" rows="2">${escapeText(r.address)}</textarea></div>
+          <div><label>项目经理</label><textarea data-f="pm" rows="2">${escapeText(r.pm)}</textarea></div>
+        </div>
+      </div>`;
+}
+function gxGroupHTML(g, gi, total) {
+  return `
+    <div class="item-card gx-group" data-g="${gi}">
       <div class="item-card-head">
-        <span class="item-label">需求 #${idx + 1}</span>
+        <span class="item-label">岗位组 #${gi + 1}</span>
         <span class="row-actions">
-          <button type="button" class="btn btn-ghost btn-sm" data-action="up-dm"${idx === 0 ? ' disabled' : ''} title="上移">↑</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-action="down-dm"${idx === total - 1 ? ' disabled' : ''} title="下移">↓</button>
-          <button type="button" class="btn btn-danger btn-sm" data-action="remove-dm">删除</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="gx-up"${gi === 0 ? ' disabled' : ''} title="上移">↑</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="gx-down"${gi === total - 1 ? ' disabled' : ''} title="下移">↓</button>
+          <button type="button" class="btn btn-danger btn-sm" data-action="gx-del">删除</button>
         </span>
       </div>
       <div class="field-row two-even">
-        <div><label>岗位</label><input type="text" data-field="role" value="${escapeAttr(r.role)}" placeholder="例如：Java开发"></div>
-        <div><label>项目经理</label><input type="text" data-field="pm" value="${escapeAttr(r.pm)}"></div>
+        <div><label>岗位</label><input type="text" data-gf="role" value="${escapeAttr(g.role)}" placeholder="例如：Java"></div>
+        <div><label>项目组</label><input type="text" data-gf="team" value="${escapeAttr(g.team)}"></div>
       </div>
-      <div class="field-row three">
-        <div><label>每日可推</label><input type="text" data-field="daily" value="${escapeAttr(r.daily)}" inputmode="numeric"></div>
-        <div><label>已推荐</label><input type="text" data-field="recommended" value="${escapeAttr(r.recommended)}" inputmode="numeric"></div>
-        <div><label>紧急程度</label><select data-field="urgency">${opts}</select></div>
+      <div class="field-row"><label>岗位补充说明</label><input type="text" data-gf="roleNote" value="${escapeAttr(g.roleNote)}" placeholder="例如：**(优先统招本科，现场面试)**"></div>
+      <div class="field-row three-even">
+        <div><label>当日简历目标</label><input type="text" data-gf="target" value="${escapeAttr(g.target)}" inputmode="numeric"></div>
+        <div><label>薪资</label><input type="text" data-gf="salary" value="${escapeAttr(g.salary)}"></div>
+        <div><label>年限</label><input type="text" data-gf="years" value="${escapeAttr(g.years)}"></div>
       </div>
-      <div class="field-row"><label>简历筛选方向</label><textarea data-field="direction" rows="3">${escapeText(r.direction)}</textarea></div>
-      <div class="field-row"><label>备注</label><input type="text" data-field="note" value="${escapeAttr(r.note)}"></div>
+      <div class="field-row check"><label><input type="checkbox" data-gf="highlight"${g.highlight ? ' checked' : ''}> 岗位格黄色高亮</label></div>
+      <div class="gx-rows">${g.rows.map((r, ri) => gxRowHTML(r, gi, ri, g.rows.length)).join('')}</div>
+      <div class="section-actions"><button type="button" class="btn btn-ghost btn-sm" data-action="gx-row-add">+ 添加子行</button></div>
     </div>`;
 }
-function collectDemandFromForm() {
-  if (!$('#dm-editor')) return normalizeDemand(state.demand);
-  const rows = $$('#dm-editor .item-card').map((card) => {
-    const v = (f) => (card.querySelector(`[data-field="${f}"]`)?.value || '').trim();
-    return { role: v('role'), pm: v('pm'), daily: v('daily'), recommended: v('recommended'), direction: v('direction'), urgency: v('urgency') || '一般', note: v('note') };
+function collectGuoxinFromForm() {
+  if (!$('#gx-editor')) return normalizeGuoxin(state.guoxin);
+  const groups = $$('#gx-editor .gx-group').map((card) => {
+    const v = (f) => (card.querySelector(`[data-gf="${f}"]`)?.value || '');
+    return {
+      role: v('role'), team: v('team'), roleNote: v('roleNote'), target: v('target'), salary: v('salary'), years: v('years'),
+      highlight: !!card.querySelector('[data-gf="highlight"]')?.checked,
+      rows: Array.from(card.querySelectorAll('.gx-row')).map((row) => {
+        const w = (f) => (row.querySelector(`[data-f="${f}"]`)?.value || '');
+        return { skills: w('skills'), interview: w('interview'), address: w('address'), pm: w('pm') };
+      })
+    };
   });
-  return normalizeDemand({
-    demandCount: $('#dm-count')?.value || '',
-    resumeTarget: $('#dm-target')?.value || '',
-    rows
-  });
+  return normalizeGuoxin({ title: $('#gx-title')?.value ?? '', groups });
 }
-function renderDemandEditor() {
-  const ed = $('#dm-editor');
+function renderGuoxinEditor() {
+  const ed = $('#gx-editor');
   if (!ed) return;
-  const d = normalizeDemand(state.demand);
-  state.demand = d;
-  ed.innerHTML = d.rows.length ? d.rows.map((r, i) => demandRowHTML(r, i, d.rows.length)).join('')
-    : '<p class="editor-empty">暂无需求，点击下方「添加需求」，或用截图识别 / 载入示例</p>';
-  $('#dm-count').value = d.demandCount;
-  $('#dm-target').value = d.resumeTarget;
-  updateDemandAuto();
+  const g = normalizeGuoxin(state.guoxin);
+  state.guoxin = g;
+  $('#gx-title').value = g.title;
+  ed.innerHTML = g.groups.length ? g.groups.map((x, i) => gxGroupHTML(x, i, g.groups.length)).join('')
+    : '<p class="editor-empty">暂无岗位，点击下方「添加岗位组」，或用截图识别 / 载入示例</p>';
+  updateGuoxinCount();
 }
-function updateDemandAuto() {
-  const d = state.demand || { rows: [] };
-  const sum = d.rows.reduce((a, r) => { const n = parseFloat(r.daily); return a + (isNaN(n) ? 0 : n); }, 0);
-  if ($('#dm-count')) $('#dm-count').placeholder = `自动：${d.rows.length}`;
-  if ($('#dm-target')) $('#dm-target').placeholder = `自动：${sum}`;
-  if ($('#dm-row-count')) $('#dm-row-count').textContent = String(d.rows.length);
+function updateGuoxinCount() {
+  const g = state.guoxin || { groups: [] };
+  if ($('#gx-count')) $('#gx-count').textContent = String(g.groups.length);
 }
-function demandMutate(fn) {
+function guoxinMutate(fn) {
   markDirty();
   collectStateFromForm();
-  fn(state.demand.rows);
+  fn(state.guoxin.groups);
   renderEditors();
   pushToBoard();
 }
-function loadDemandSample() {
-  if (state.demand.rows.length && !confirm('用截图里的示例需求表覆盖当前需求？')) return;
+function loadGuoxinSample() {
+  if (state.guoxin.groups.length && !confirm('用截图里的示例覆盖当前国信看板内容？')) return;
   collectStateFromForm();
-  state.demand = normalizeDemand(BoardTemplates.demandTable.sample());
+  state.guoxin = normalizeGuoxin(BoardTemplates.guoxin.sample());
   renderEditors();
   pushToBoard();
-  setStatus('已载入需求表示例');
+  setStatus('已载入国信看板示例');
+}
+function markRedSelection() {
+  const el = lastRichField;
+  if (!el || !document.body.contains(el)) { setStatus('先点进一个文字框并选中要标红的文字', true); return; }
+  const a = el.selectionStart, b = el.selectionEnd;
+  if (a == null || a === b) { setStatus('先选中要标红的文字', true); el.focus(); return; }
+  const v = el.value, sel = v.slice(a, b);
+  const wrapped = /^\*\*[\s\S]*\*\*$/.test(sel) ? sel.slice(2, -2) : `**${sel}**`;
+  el.value = v.slice(0, a) + wrapped + v.slice(b);
+  el.focus();
+  el.setSelectionRange(a, a + wrapped.length);
+  syncFromFormAndPreview();
 }
 
 function escapeAttr(s) {
@@ -584,7 +617,7 @@ function renderEditors() {
   if (cheer) cheer.value = cele.cheer || '';
   const body = $('#cele-body');
   if (body) body.hidden = !cele.enabled;
-  renderDemandEditor();
+  renderGuoxinEditor();
 }
 
 function syncFromFormAndPreview() {
@@ -596,7 +629,7 @@ function syncFromFormAndPreview() {
   if (celeCount) celeCount.textContent = String((state.celebrate?.people || []).length);
   const body = $('#cele-body');
   if (body) body.hidden = !state.celebrate?.enabled;
-  updateDemandAuto();
+  updateGuoxinCount();
   pushToBoard();
 }
 
@@ -769,25 +802,37 @@ function bindEvents() {
   $('#client-template')?.addEventListener('change', (e) => changeTemplateType(e.target.value));
   $('#client-dialog-form')?.addEventListener('submit', confirmAddClient);
   $('#btn-client-dialog-cancel')?.addEventListener('click', () => $('#client-dialog').close());
-  $('#btn-add-dm')?.addEventListener('click', () => demandMutate((rows) => {
-    const last = rows[rows.length - 1];
-    rows.push({ role: last ? last.role : '', pm: '', daily: '', recommended: '', direction: '', urgency: '一般', note: '' });
+  $('#btn-add-gx')?.addEventListener('click', () => guoxinMutate((gs) => {
+    gs.push({ team: '', role: '', roleNote: '', highlight: true, target: '', salary: '', years: '', rows: [{ skills: '', interview: '', address: '', pm: '' }] });
   }));
-  $('#btn-dm-sample')?.addEventListener('click', loadDemandSample);
-  ['dm-count', 'dm-target'].forEach((id) => $('#' + id)?.addEventListener('input', syncFromFormAndPreview));
-  const dmEd = $('#dm-editor');
-  if (dmEd) {
-    dmEd.addEventListener('input', syncFromFormAndPreview);
-    dmEd.addEventListener('change', syncFromFormAndPreview);
-    dmEd.addEventListener('click', (e) => {
+  $('#btn-gx-sample')?.addEventListener('click', loadGuoxinSample);
+  $('#btn-gx-red')?.addEventListener('mousedown', (e) => e.preventDefault()); // keep selection
+  $('#btn-gx-red')?.addEventListener('click', markRedSelection);
+  $('#gx-title')?.addEventListener('input', syncFromFormAndPreview);
+  $('#gx-title')?.addEventListener('focus', (e) => { lastRichField = e.target; });
+  const gxEd = $('#gx-editor');
+  if (gxEd) {
+    gxEd.addEventListener('input', syncFromFormAndPreview);
+    gxEd.addEventListener('change', syncFromFormAndPreview);
+    gxEd.addEventListener('focusin', (e) => { if (e.target.matches('textarea, input[type=text]')) lastRichField = e.target; });
+    gxEd.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
-      const idx = Number(btn.closest('.item-card')?.dataset.idx);
-      if (Number.isNaN(idx)) return;
-      const a = btn.dataset.action;
-      if (a === 'remove-dm') demandMutate((rows) => rows.splice(idx, 1));
-      if (a === 'up-dm' && idx > 0) demandMutate((rows) => rows.splice(idx - 1, 0, rows.splice(idx, 1)[0]));
-      if (a === 'down-dm') demandMutate((rows) => { if (idx < rows.length - 1) rows.splice(idx + 1, 0, rows.splice(idx, 1)[0]); });
+      const gi = Number(btn.closest('.gx-group')?.dataset.g);
+      const ri = Number(btn.closest('.gx-row')?.dataset.r);
+      const mv = (arr, i, j) => { if (j >= 0 && j < arr.length) arr.splice(j, 0, arr.splice(i, 1)[0]); };
+      switch (btn.dataset.action) {
+        case 'gx-del': if (confirm('删除这个岗位组？')) guoxinMutate((gs) => gs.splice(gi, 1)); break;
+        case 'gx-up': guoxinMutate((gs) => mv(gs, gi, gi - 1)); break;
+        case 'gx-down': guoxinMutate((gs) => mv(gs, gi, gi + 1)); break;
+        case 'gx-row-add': guoxinMutate((gs) => {
+          const rows = gs[gi].rows; const last = rows[rows.length - 1] || {};
+          rows.push({ skills: '', interview: last.interview || '', address: last.address || '', pm: '' });
+        }); break;
+        case 'gx-row-del': guoxinMutate((gs) => { if (gs[gi].rows.length > 1) gs[gi].rows.splice(ri, 1); }); break;
+        case 'gx-row-up': guoxinMutate((gs) => mv(gs[gi].rows, ri, ri - 1)); break;
+        case 'gx-row-down': guoxinMutate((gs) => mv(gs[gi].rows, ri, ri + 1)); break;
+      }
     });
   }
   $('#btn-load-sample')?.addEventListener('click', (e) => { e.preventDefault(); loadSampleIntoCurrent(); });
@@ -906,16 +951,16 @@ function getBoardState() {
 
 
 function mergeOcrInto(base, parsed, meta) {
-  if (meta.templateType === 'demandTable') {
+  if (meta.templateType === 'guoxin') {
     const out = normalizeClientData(base);
     if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
-    const dm = normalizeDemand(parsed);
-    out.demand = { demandCount: dm.demandCount, resumeTarget: dm.resumeTarget, rows: dm.rows };
+    const gx = normalizeGuoxin(parsed);
+    out.guoxin = { title: gx.title || out.guoxin.title, groups: gx.groups };
     return out;
   }
   const out = {
     templateType: base.templateType || 'cards',
-    demand: normalizeDemand(base.demand),
+    guoxin: normalizeGuoxin(base.guoxin),
     date: base.date || '',
     interviews: Array.isArray(base.interviews) ? base.interviews.slice() : [],
     roles: Array.isArray(base.roles) ? base.roles.slice() : [],
@@ -997,27 +1042,37 @@ function undoLastOcr() {
 
 function normalizeClientData(d) {
   d = d || {};
-  return {
-    templateType: BoardTemplates[d.templateType] ? d.templateType : 'cards',
-    demand: normalizeDemand(d.demand),
+  let type = d.templateType;
+  let guoxin = d.guoxin;
+  const legacyDemand = d.demand && Array.isArray(d.demand.rows) && d.demand.rows.length ? d.demand : null;
+  if (type === 'demandTable') {
+    type = 'guoxin'; // 需求表模板已下线 → 迁移到国信看板
+    if (!guoxin || !Array.isArray(guoxin.groups) || !guoxin.groups.length) guoxin = legacyDemand ? migrateDemandToGuoxin(legacyDemand) : null;
+  }
+  const out = {
+    templateType: BoardTemplates[type] ? type : 'cards',
+    guoxin: normalizeGuoxin(guoxin),
     date: normDate(d.date),
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
     celebrate: normalizeCelebrate(d.celebrate),
     savedAt: typeof d.savedAt === 'number' ? d.savedAt : null
   };
+  if (legacyDemand) out.legacyDemand = legacyDemand; // 原始需求表数据保留一份，不丢
+  else if (d.legacyDemand) out.legacyDemand = d.legacyDemand;
+  return out;
 }
 
 // Manual repair for polluted data: reload the built-in Oct 14 sample into the CURRENT client (confirm, never automatic)
 function loadSampleIntoCurrent() {
   const c = getClient();
   if (!confirm(`用内置的 10月14日 示例数据覆盖「${c}」当前内容？（可先导出 JSON 备份）`)) return;
-  if (state.templateType === 'demandTable') {
-    state.demand = normalizeDemand(BoardTemplates.demandTable.sample());
+  if (state.templateType === 'guoxin') {
+    state.guoxin = normalizeGuoxin(BoardTemplates.guoxin.sample());
   } else {
-    const keep = state.demand;
+    const keep = state.guoxin;
     state = eFundDefault();
-    state.demand = keep;
+    state.guoxin = keep;
   }
   renderEditors();
   pushToBoard();

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>招聘看板</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #f5f5f7; color: #1d1d1f;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 36px; }
+  .wrap { width: 1928px; margin: 0 auto; }
+  .header { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+  h1 { font-size: 60px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.08; }
+  .date { font-size: 28px; font-weight: 600; color: #3a3a3c; }
+  .table-card { background: #fff; border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 10px 30px rgba(0,0,0,.05); overflow: hidden; }
+  .t-title {
+    text-align: center; font-size: 30px; font-weight: 700; letter-spacing: -0.02em;
+    padding: 18px 20px; background: #efeafb; color: #1d1d1f; border-bottom: 1px solid rgba(88,86,214,.18);
+  }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th {
+    font-size: 19px; font-weight: 700; color: #1d1d1f; text-align: center;
+    padding: 14px 10px; background: #f6f3fd; border-bottom: 1px solid rgba(0,0,0,.10); border-right: 1px solid rgba(0,0,0,.06);
+  }
+  th:last-child, td:last-child { border-right: none; }
+  td {
+    font-size: 18px; font-weight: 500; line-height: 1.55; padding: 12px 14px; color: #1d1d1f;
+    border-bottom: 1px solid rgba(0,0,0,.08); border-right: 1px solid rgba(0,0,0,.06);
+    vertical-align: middle; text-align: center; word-break: break-word;
+  }
+  td.skills { text-align: left; }
+  td.role { font-weight: 700; font-size: 21px; }
+  td.role.hl { background: #fff7b8; }
+  td.role .note { display: block; font-size: 16px; font-weight: 600; margin-top: 4px; }
+  td.target { background: #eef4fb; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  td.num { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  td.pm { font-weight: 600; }
+  tr.group-start td { border-top: 2px solid rgba(0,0,0,.14); }
+  .red { color: #e5001c; font-weight: 700; }
+  .empty { padding: 60px; text-align: center; color: #86868b; font-size: 22px; }
+  footer { text-align: center; font-size: 16px; color: #3a3a3c; margin-top: 18px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="wrap" id="board">
+    <div class="header">
+      <h1 id="title">招聘看板</h1>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="table-card">
+      <div class="t-title" id="t-title"></div>
+      <table>
+        <colgroup>
+          <col style="width:120px"><col style="width:190px"><col style="width:120px"><col style="width:130px"><col style="width:110px">
+          <col><col style="width:250px"><col style="width:250px"><col style="width:230px">
+        </colgroup>
+        <thead><tr><th>项目组</th><th>岗位</th><th>当日简历目标</th><th>薪资</th><th>年限</th><th>重点技能</th><th>面试方式</th><th>详细地址</th><th>项目经理</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <footer>数据来自招聘需求表</footer>
+  </div>
+<script>
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  // **text** → red; newlines → <br>
+  function rich(s) {
+    return esc(s).replace(/\*\*([\s\S]+?)\*\*/g, '<span class="red">$1</span>').replace(/\n/g, '<br>');
+  }
+  function spans(rows, key) {
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var v = rows[i][key] || '';
+      if (i > 0 && v && v === (rows[i - 1][key] || '')) { out[i] = 0; var j = i - 1; while (out[j] === 0) j--; out[j]++; }
+      else out[i] = 1;
+    }
+    return out;
+  }
+  function renderBoard(data) {
+    data = data || {};
+    var g = data.guoxin || {};
+    var groups = (Array.isArray(g.groups) ? g.groups : []).filter(function (x) {
+      return x && (x.role || (x.rows || []).some(function (r) { return r.skills || r.pm; }));
+    });
+    document.getElementById('title').textContent = (data.client || '') + '招聘看板';
+    document.getElementById('date').textContent = data.date || '';
+    var tt = document.getElementById('t-title');
+    tt.innerHTML = rich(g.title || '');
+    tt.style.display = g.title ? '' : 'none';
+    document.title = (data.client || '') + '招聘看板 · ' + (data.date || '');
+    var tb = document.getElementById('rows');
+    if (!groups.length) { tb.innerHTML = '<tr><td colspan="9" class="empty">暂无岗位，在左侧添加</td></tr>'; return; }
+    var html = '';
+    groups.forEach(function (grp) {
+      var rows = (grp.rows && grp.rows.length) ? grp.rows : [{}];
+      var n = rows.length, sI = spans(rows, 'interview'), sA = spans(rows, 'address');
+      rows.forEach(function (r, i) {
+        html += '<tr' + (i === 0 ? ' class="group-start"' : '') + '>';
+        if (i === 0) {
+          html += '<td rowspan="' + n + '">' + rich(grp.team) + '</td>';
+          html += '<td class="role' + (grp.highlight ? ' hl' : '') + '" rowspan="' + n + '">' + rich(grp.role) +
+                  (grp.roleNote ? '<span class="note">' + rich(grp.roleNote) + '</span>' : '') + '</td>';
+          html += '<td class="target" rowspan="' + n + '">' + rich(grp.target) + '</td>';
+          html += '<td class="num" rowspan="' + n + '">' + rich(grp.salary) + '</td>';
+          html += '<td class="num" rowspan="' + n + '">' + rich(grp.years) + '</td>';
+        }
+        html += '<td class="skills">' + rich(r.skills) + '</td>';
+        if (sI[i] > 0) html += '<td rowspan="' + sI[i] + '">' + rich(r.interview) + '</td>';
+        if (sA[i] > 0) html += '<td rowspan="' + sA[i] + '">' + rich(r.address) + '</td>';
+        html += '<td class="pm">' + rich(r.pm) + '</td>';
+        html += '</tr>';
+      });
+    });
+    tb.innerHTML = html;
+  }
+  window.renderBoard = renderBoard;
+  window.addEventListener('message', function (ev) { if (ev.data && ev.data.type === 'BOARD_DATA') renderBoard(ev.data.payload); });
+  try { parent.postMessage({ type: 'BOARD_READY' }, '*'); } catch (e) {}
+</script>
+</body>
+</html>

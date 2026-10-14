@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>易方达招聘看板生成器</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --secondary: #6e6e73;
+    --line: #e5e5ea;
+    --link: #0071e3;
+    --urgent: #ff3b30;
+    --medium: #ff9f0a;
+    --ok: #30d158;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .app-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 22px;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: saturate(180%) blur(16px);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .app-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .app-header .sub {
+    font-size: 13px;
+    color: var(--secondary);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn {
+    appearance: none;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #e8e8ed;
+    color: var(--text);
+    transition: transform .08s ease, opacity .15s;
+  }
+  .btn:hover { opacity: .92; }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary { background: var(--link); color: #fff; }
+  .btn-accent { background: var(--urgent); color: #fff; }
+  .btn-ok { background: var(--ok); color: #fff; }
+  .btn-danger { background: #ffe5e3; color: var(--urgent); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+  .btn-ghost { background: transparent; border: 1px solid var(--line); }
+
+  .layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    min-height: 0;
+  }
+
+  .panel {
+    overflow: auto;
+    padding: 18px 18px 40px;
+    border-right: 1px solid var(--line);
+    background: #fafafa;
+  }
+
+  .panel-section {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .panel-section h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .panel-section h2 .count {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--secondary);
+    background: var(--bg);
+    border-radius: 100px;
+    padding: 2px 8px;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--secondary);
+    margin-bottom: 4px;
+  }
+  input[type="text"], select, textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 11px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--link);
+    box-shadow: 0 0 0 3px rgba(0,113,227,.15);
+  }
+  textarea { resize: vertical; min-height: 64px; line-height: 1.45; }
+
+  .field-row { margin-bottom: 10px; }
+  .field-row.two {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 10px;
+  }
+  .field-row.check label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .field-row.check input { width: auto; }
+
+  .item-card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .item-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .item-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--secondary);
+  }
+  .editor-empty {
+    font-size: 13px;
+    color: var(--secondary);
+    padding: 8px 0 4px;
+  }
+  .section-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .preview-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #e8e8ed;
+  }
+  .preview-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--secondary);
+  }
+  #status.ok { color: var(--ok); }
+  #status.error { color: var(--urgent); }
+
+  .preview-stage {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+  }
+  .preview-frame-shell {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-height: 480px;
+    height: calc(100vh - 140px);
+  }
+  #board-frame {
+    width: 1400px;
+    height: 100%;
+    border: 0;
+    transform-origin: top left;
+    background: #f5f5f7;
+  }
+
+  .hint-tip {
+    font-size: 12px;
+    color: var(--secondary);
+    line-height: 1.5;
+    margin-top: 8px;
+  }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .panel { border-right: none; border-bottom: 1px solid var(--line); max-height: 50vh; }
+    .preview-frame-shell { height: 60vh; }
+  }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>易方达招聘看板生成器</h1>
+      <div class="sub">填表 → 预览 → 下载超清图</div>
+    </div>
+    <div class="toolbar">
+      <button type="button" class="btn" id="btn-refresh">刷新预览</button>
+      <button type="button" class="btn btn-accent" id="btn-png">下载超清PNG</button>
+      <button type="button" class="btn btn-primary" id="btn-jpg">下载JPG</button>
+      <button type="button" class="btn btn-ghost" id="btn-export-json">导出JSON</button>
+      <button type="button" class="btn btn-ghost" id="btn-import-json">导入JSON</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-section">
+        <h2>日期</h2>
+        <div class="field-row">
+          <label for="field-date">看板日期</label>
+          <input type="text" id="field-date" placeholder="例如：2026年10月14日">
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h2>今日面试跟进 <span class="count"><span id="iv-count">0</span> 人</span></h2>
+        <div id="iv-editor"></div>
+        <div class="section-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-add-iv">添加面试</button>
+        </div>
+        <p class="hint-tip">一面橙色、二面蓝色。时间可写「今天下午 17:00」。</p>
+      </div>
+
+      <div class="panel-section">
+        <h2>优先岗位 <span class="count"><span id="role-count">0</span> 岗</span></h2>
+        <div id="role-editor"></div>
+        <div class="section-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-add-role">添加岗位</button>
+        </div>
+        <p class="hint-tip">勾选「重点岗位」会显示红色「重点」标签。进展不用写「进展：」前缀。</p>
+      </div>
+    </aside>
+
+    <section class="preview-wrap">
+      <div class="preview-bar">
+        <span>实时预览</span>
+        <span id="status">已加载 10月14日示例数据</span>
+      </div>
+      <div class="preview-stage" id="preview-stage">
+        <div class="preview-frame-shell" id="frame-shell">
+          <iframe id="board-frame" src="./board-template.html" title="招聘看板预览"></iframe>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <script src="./app.js"></script>
+  <script src="./export.js"></script>
+  <script>
+    // Fit iframe into preview shell
+    function fitPreview() {
+      const shell = document.getElementById('frame-shell');
+      const frame = document.getElementById('board-frame');
+      if (!shell || !frame) return;
+      const shellW = shell.clientWidth;
+      const scale = Math.min(1, shellW / 1400);
+      frame.style.transform = 'scale(' + scale + ')';
+      frame.style.width = '1400px';
+      // Approximate board height; iframe scrolls inside if taller
+      const shellH = shell.clientHeight;
+      frame.style.height = (shellH / scale) + 'px';
+    }
+    window.addEventListener('resize', fitPreview);
+    document.addEventListener('DOMContentLoaded', () => {
+      fitPreview();
+      const frame = document.getElementById('board-frame');
+      frame.addEventListener('load', fitPreview);
+      setTimeout(fitPreview, 200);
+    });
+  </script>
+</body>
+</html>

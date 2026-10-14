@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>易方达招聘看板</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #000000;
+    --secondary: #3a3a3c;
+    --urgent: #ff3b30;
+    --medium: #ff9f0a;
+    --link: #0071e3;
+    --ok: #30d158;
+    --chip: #f5f5f7;
+    --track: #e8e8ed;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
+    --radius: 20px;
+    --radius-lg: 24px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
+    font-weight: 600;
+    font-feature-settings: "ss01" on, "ss02" on, "tnum" on;
+  }
+
+  body {
+    padding: 36px 36px 40px;
+    line-height: 1.47;
+  }
+
+  .wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-size: 64px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+  }
+
+  .header-date {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--secondary);
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 4px;
+    gap: 16px;
+  }
+
+  .section-head h2 {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #000;
+  }
+
+  .section-head .hint {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1d1d1f;
+    flex-shrink: 0;
+  }
+
+  .interviews-block { margin-bottom: 22px; }
+
+  .interviews-block .section-head h2 {
+    font-size: 34px;
+    letter-spacing: -0.025em;
+  }
+
+  .interviews {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .iv {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 22px 22px 18px 20px;
+    display: flex;
+    gap: 16px;
+    min-width: 0;
+    position: relative;
+    overflow: visible;
+    height: 100%;
+  }
+
+  .iv-accent {
+    width: 4px;
+    border-radius: 100px;
+    flex-shrink: 0;
+    align-self: stretch;
+    background: #d2d2d7;
+  }
+
+  .iv.round-r2 .iv-accent { background: var(--link); width: 5px; }
+  .iv.round-r1 .iv-accent { background: var(--medium); width: 5px; }
+
+  .iv-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .iv-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .iv-name {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: #000;
+  }
+
+  .iv-pill {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border-radius: 100px;
+    padding: 4px 12px;
+    line-height: 1.2;
+    flex-shrink: 0;
+    min-width: 68px;
+    text-align: center;
+    color: #fff;
+  }
+
+  .iv-pill.r2 { background: var(--link); }
+  .iv-pill.r1 { background: var(--medium); }
+
+  .iv-when {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1d1d1f;
+    margin-top: 6px;
+  }
+
+  .roles-block { margin-bottom: 22px; }
+
+  .roles-block > .section-head h2 {
+    font-size: 36px;
+    color: #ff3b30;
+    letter-spacing: -0.025em;
+  }
+
+  .roles-block > .section-head .hint {
+    color: #ff3b30;
+    font-weight: 700;
+    font-size: 20px;
+  }
+
+  .roles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .role {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    min-width: 0;
+    border: 1px solid rgba(0,0,0,.06);
+    border-left: 5px solid #ff3b30;
+    padding: 18px 18px 16px 16px;
+  }
+
+  .role.featured {
+    box-shadow: 0 1px 2px rgba(255,59,48,.10), 0 10px 28px rgba(255,59,48,.12);
+    border-left-width: 6px;
+    border-color: rgba(255,59,48,.35);
+    background: linear-gradient(180deg, #fff 0%, #fff8f7 100%);
+  }
+
+  .role-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .role-left {
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .udot { display: none; }
+
+  .role-title {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
+    color: #000;
+    overflow: visible;
+    word-break: break-word;
+  }
+
+  .focus-pill {
+    display: inline-block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--urgent);
+    border-radius: 100px;
+    padding: 3px 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .role-team {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0071e3;
+    margin-top: 4px;
+    line-height: 1.45;
+    overflow: visible;
+    word-break: break-word;
+  }
+
+  .role-body {
+    padding-left: 0;
+    margin-top: 8px;
+  }
+
+  .role-note {
+    font-size: 19px;
+    color: #1d1d1f;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-top: 10px;
+    margin-bottom: 0;
+    letter-spacing: -0.01em;
+    padding-top: 10px;
+    border-top: 1px solid #e8e8ed;
+  }
+
+  .role-note.role-prog {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 8px;
+    color: #0071e3;
+    font-weight: 700;
+  }
+
+  .empty-hint {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 22px;
+    text-align: center;
+    color: var(--secondary);
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 16px;
+    color: #3a3a3c;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap" id="board">
+    <div class="header">
+      <h1>易方达招聘看板</h1>
+      <div class="header-date" id="board-date">—</div>
+    </div>
+
+    <section class="interviews-block">
+      <div class="section-head">
+        <h2>今日面试跟进</h2>
+        <span class="hint" id="iv-hint">0 人</span>
+      </div>
+      <div class="interviews" id="iv-list"></div>
+    </section>
+
+    <section class="roles-block">
+      <div class="section-head">
+        <h2>优先岗位</h2>
+        <span class="hint" id="role-hint">重点 0 岗 · 均为紧急</span>
+      </div>
+      <section class="roles" id="role-list"></section>
+    </section>
+
+    <footer>数据来自招聘进度表</footer>
+  </div>
+  <script>
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function roundClass(round) {
+      return round === '一面' ? 'r1' : 'r2';
+    }
+
+    function roundAccent(round) {
+      return round === '一面' ? 'round-r1' : 'round-r2';
+    }
+
+    function ivColumns(n) {
+      if (n <= 1) return '1fr';
+      if (n === 2) return '1fr 1fr';
+      return '1fr 1fr 1fr';
+    }
+
+    function renderBoard(data) {
+      data = data || { date: '', interviews: [], roles: [] };
+      var interviews = Array.isArray(data.interviews) ? data.interviews : [];
+      var roles = Array.isArray(data.roles) ? data.roles : [];
+
+      document.getElementById('board-date').textContent = data.date || '—';
+      document.getElementById('iv-hint').textContent = interviews.length + ' 人';
+
+      var featuredCount = roles.filter(function (r) { return r.featured; }).length;
+      var hint = roles.length
+        ? (featuredCount ? ('重点 ' + roles.length + ' 岗 · 均为紧急') : (roles.length + ' 岗 · 均为紧急'))
+        : '0 岗';
+      document.getElementById('role-hint').textContent = hint;
+
+      var ivList = document.getElementById('iv-list');
+      ivList.style.gridTemplateColumns = ivColumns(interviews.length);
+      if (!interviews.length) {
+        ivList.innerHTML = '<div class="empty-hint">暂无今日面试</div>';
+      } else {
+        ivList.innerHTML = interviews.map(function (iv) {
+          var round = iv.round === '一面' ? '一面' : '二面';
+          return (
+            '<article class="iv ' + roundAccent(round) + '">' +
+              '<div class="iv-accent" aria-hidden="true"></div>' +
+              '<div class="iv-body">' +
+                '<div class="iv-top">' +
+                  '<div class="iv-name">' + esc(iv.name || '') + '</div>' +
+                  '<span class="iv-pill ' + roundClass(round) + '">' + esc(round) + '</span>' +
+                '</div>' +
+                '<div class="iv-when">' + esc(iv.when || '') + '</div>' +
+              '</div>' +
+            '</article>'
+          );
+        }).join('');
+      }
+
+      var roleList = document.getElementById('role-list');
+      if (!roles.length) {
+        roleList.innerHTML = '<div class="empty-hint" style="grid-column:1/-1">暂无优先岗位</div>';
+      } else {
+        roleList.innerHTML = roles.map(function (role) {
+          var title = esc(role.title || '');
+          if (role.featured) {
+            title += ' <span class="focus-pill">重点</span>';
+          }
+          var note = role.note ? '<div class="role-note">' + esc(role.note) + '</div>' : '';
+          var progress = role.progress
+            ? '<div class="role-note role-prog">进展：' + esc(role.progress) + '</div>'
+            : '';
+          return (
+            '<article class="role' + (role.featured ? ' featured' : '') + '">' +
+              '<div class="role-top">' +
+                '<div class="role-left">' +
+                  '<span class="udot urgent"></span>' +
+                  '<div>' +
+                    '<div class="role-title">' + title + '</div>' +
+                    '<div class="role-team">' + esc(role.team || '') + '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="role-body">' + note + progress + '</div>' +
+            '</article>'
+          );
+        }).join('');
+      }
+
+      document.title = '易方达招聘看板 · ' + (data.date || '');
+    }
+
+    window.renderBoard = renderBoard;
+
+    window.addEventListener('message', function (ev) {
+      if (!ev.data || ev.data.type !== 'BOARD_DATA') return;
+      renderBoard(ev.data.payload);
+    });
+
+    // Ready signal for parent
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'BOARD_READY' }, '*');
+      }
+    } catch (e) {}
+  </script>
+</body>
+</html>

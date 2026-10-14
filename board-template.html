@@ -90,6 +90,74 @@
     flex-shrink: 0;
   }
 
+
+  .celebrate-block { margin-bottom: 22px; }
+  .celebrate-block > .section-head h2 {
+    font-size: 34px;
+    color: #30d158;
+    letter-spacing: -0.025em;
+  }
+  .celebrate-block > .section-head .hint {
+    color: #30d158;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  .celebrate {
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    background: #fff;
+    border-radius: 28px;
+    padding: 48px 140px 44px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 14px 36px rgba(48,209,88,.10);
+    border: 1px solid rgba(48,209,88,.14);
+    isolation: isolate;
+  }
+  .celebrate-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(36px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .celebrate-blob.a { width: 260px; height: 260px; background: rgba(48,209,88,.20); top: -90px; left: -50px; }
+  .celebrate-blob.b { width: 200px; height: 200px; background: rgba(100,210,255,.16); bottom: -80px; right: 70px; }
+  .celebrate-blob.c { width: 150px; height: 150px; background: rgba(255,214,10,.14); top: 18px; right: -36px; }
+  .celebrate-deco {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 108px;
+    line-height: 1;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .celebrate-deco.l { left: 18px; }
+  .celebrate-deco.r { right: 18px; }
+  .celebrate-hi,
+  .celebrate-mid,
+  .celebrate-lo { position: relative; z-index: 1; }
+  .celebrate-hi {
+    font-size: 40px;
+    font-weight: 700;
+    color: #30d158;
+    letter-spacing: 0.08em;
+  }
+  .celebrate-mid {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.25;
+    margin: 14px 0 16px;
+  }
+  .celebrate-lo {
+    font-size: 32px;
+    font-weight: 600;
+    color: #1d1d1f;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
+  }
+
   .interviews-block { margin-bottom: 22px; }
 
   .interviews-block .section-head h2 {
@@ -312,6 +380,23 @@
       <div class="header-date" id="board-date">—</div>
     </div>
 
+    <section class="celebrate-block" id="cele-block" hidden>
+      <div class="section-head">
+        <h2>今日入职 ✨</h2>
+        <span class="hint" id="cele-hint">0 人</span>
+      </div>
+      <article class="celebrate" id="cele-card">
+        <div class="celebrate-blob a" aria-hidden="true"></div>
+        <div class="celebrate-blob b" aria-hidden="true"></div>
+        <div class="celebrate-blob c" aria-hidden="true"></div>
+        <div class="celebrate-deco l" aria-hidden="true">🎆</div>
+        <div class="celebrate-deco r" aria-hidden="true">🥳</div>
+        <div class="celebrate-hi" id="cele-hi"></div>
+        <div class="celebrate-mid" id="cele-mid"></div>
+        <div class="celebrate-lo" id="cele-lo"></div>
+      </article>
+    </section>
+
     <section class="interviews-block">
       <div class="section-head">
         <h2>今日面试跟进</h2>
@@ -419,6 +504,52 @@
             '</article>'
           );
         }).join('');
+      }
+
+
+      var celeBlock = document.getElementById('cele-block');
+      var cele = data.celebrate || {};
+      var people = Array.isArray(cele.people) ? cele.people.filter(function (p) {
+        return p && (String(p.name || '').trim() || String(p.title || '').trim());
+      }) : [];
+      var showCele = !!cele.enabled && people.length > 0;
+      if (celeBlock) {
+        celeBlock.hidden = !showCele;
+        if (showCele) {
+          document.getElementById('cele-hint').textContent = people.length + ' 人';
+          var follows = [];
+          people.forEach(function (p) {
+            var f = String(p.follow || '').trim();
+            if (f && follows.indexOf(f) < 0) follows.push(f);
+          });
+          var kicker = String(cele.kicker || '恭喜').trim() || '恭喜';
+          var hi = kicker;
+          if (follows.length === 1 && hi.indexOf(follows[0]) < 0) hi = kicker + follows[0];
+          hi += ' 🎉';
+          var n = people.length;
+          var map = {1:'一',2:'两',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九',10:'十'};
+          var nCN = map[n] || String(n);
+          var mid = String(cele.summary || '').trim();
+          if (!mid) mid = '今天入场' + (data.client || '') + nCN + '人';
+          var parts = people.map(function (p) {
+            var t = String(p.title || '').trim();
+            var nm = String(p.name || '').trim();
+            if (t && nm) return t + '·' + nm;
+            return t || nm;
+          }).filter(Boolean);
+          var cheer = String(cele.cheer || '').trim();
+          var loEl = document.getElementById('cele-lo');
+          document.getElementById('cele-hi').textContent = hi;
+          document.getElementById('cele-mid').textContent = mid;
+          if (parts.length && cheer) {
+            loEl.innerHTML = esc(parts.join(' ｜ ')) +
+              '<div style="margin-top:10px;font-size:28px;color:#3a3a3c">' + esc(cheer) + '</div>';
+          } else if (parts.length) {
+            loEl.textContent = parts.join(' ｜ ');
+          } else {
+            loEl.textContent = cheer || '继续加油，再接再入！';
+          }
+        }
       }
 
       document.title = (data.client || '') + '招聘看板 · ' + (data.date || '');

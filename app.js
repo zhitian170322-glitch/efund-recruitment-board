@@ -62,26 +62,60 @@ const DEFAULT_DATA = {
       progress: '金证8月底通过一人，9月入场',
       featured: false
     }
-  ]
+  ],
+  celebrate: {
+    enabled: false,
+    kicker: '恭喜',
+    summary: '',
+    cheer: '继续加油，再接再入！',
+    people: []
+  }
 };
 
 
 const CLIENTS_KEY = 'recruit_board_clients_v1';
 const DEFAULT_CLIENT = '易方达';
-let clientStore = null; // { current, clients: { name: {date, interviews, roles} } }
+let clientStore = null; // { current, clients: { name: data } }
 
 function todayCN() {
   const d = new Date();
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
+function defaultCelebrate() {
+  return {
+    enabled: false,
+    kicker: '恭喜',
+    summary: '',
+    cheer: '继续加油，再接再入！',
+    people: []
+  };
+}
+function normalizeCelebrate(c) {
+  c = c && typeof c === 'object' ? c : {};
+  return {
+    enabled: !!c.enabled,
+    kicker: typeof c.kicker === 'string' ? c.kicker : '恭喜',
+    summary: typeof c.summary === 'string' ? c.summary : '',
+    cheer: typeof c.cheer === 'string' ? c.cheer : '继续加油，再接再入！',
+    people: Array.isArray(c.people) ? c.people.map((p) => ({
+      name: String(p?.name || '').trim(),
+      title: String(p?.title || '').trim(),
+      follow: String(p?.follow || '').trim(),
+      note: String(p?.note || '').trim()
+    })) : []
+  };
+}
 function emptyClientData() {
-  return { date: todayCN(), interviews: [], roles: [] };
+  return { date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate() };
 }
 function loadClientStore() {
   try {
     const raw = JSON.parse(localStorage.getItem(CLIENTS_KEY) || 'null');
     if (raw && raw.clients && Object.keys(raw.clients).length) {
       if (!raw.clients[raw.current]) raw.current = Object.keys(raw.clients)[0];
+      for (const k of Object.keys(raw.clients)) {
+        raw.clients[k].celebrate = normalizeCelebrate(raw.clients[k].celebrate);
+      }
       return raw;
     }
   } catch (e) { /* ignore */ }
@@ -91,7 +125,10 @@ function loadClientStore() {
 function saveClientStore() {
   try {
     clientStore.clients[clientStore.current] = {
-      date: state.date || '', interviews: state.interviews || [], roles: state.roles || []
+      date: state.date || '',
+      interviews: state.interviews || [],
+      roles: state.roles || [],
+      celebrate: normalizeCelebrate(state.celebrate)
     };
     localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
   } catch (e) { console.warn('save failed', e); }
@@ -110,7 +147,12 @@ function renderClientSelect() {
 function loadClient(name) {
   clientStore.current = name;
   const d = clientStore.clients[name] || emptyClientData();
-  state = { date: d.date || '', interviews: d.interviews || [], roles: d.roles || [] };
+  state = {
+    date: d.date || '',
+    interviews: d.interviews || [],
+    roles: d.roles || [],
+    celebrate: normalizeCelebrate(d.celebrate)
+  };
   renderClientSelect();
   renderEditors();
   pushToBoard();
@@ -214,7 +256,20 @@ function collectStateFromForm() {
     progress: (card.querySelector('[data-field="progress"]')?.value || '').trim(),
     featured: !!(card.querySelector('[data-field="featured"]')?.checked)
   }));
-  state = { date, interviews, roles };
+  const people = $$('#cele-editor .item-card').map((card) => ({
+    name: (card.querySelector('[data-field="name"]')?.value || '').trim(),
+    title: (card.querySelector('[data-field="title"]')?.value || '').trim(),
+    follow: (card.querySelector('[data-field="follow"]')?.value || '').trim(),
+    note: (card.querySelector('[data-field="note"]')?.value || '').trim()
+  }));
+  const celebrate = {
+    enabled: !!$('#cele-enabled')?.checked,
+    kicker: ($('#cele-kicker')?.value || '').trim() || '恭喜',
+    summary: ($('#cele-summary')?.value || '').trim(),
+    cheer: ($('#cele-cheer')?.value || '').trim(),
+    people
+  };
+  state = { date, interviews, roles, celebrate };
   return state;
 }
 
@@ -275,6 +330,37 @@ function roleCardHTML(role, idx) {
     </div>`;
 }
 
+
+function celeCardHTML(p, idx) {
+  return `
+    <div class="item-card" data-idx="${idx}">
+      <div class="item-card-head">
+        <span class="item-label">入职 #${idx + 1}</span>
+        <button type="button" class="btn btn-danger btn-sm" data-action="remove-cele">删除</button>
+      </div>
+      <div class="field-row two">
+        <div>
+          <label>姓名</label>
+          <input type="text" data-field="name" value="${escapeAttr(p.name || '')}" placeholder="入职同学">
+        </div>
+        <div>
+          <label>岗位</label>
+          <input type="text" data-field="title" value="${escapeAttr(p.title || '')}" placeholder="例如：全栈开发（IMS）">
+        </div>
+      </div>
+      <div class="field-row two">
+        <div>
+          <label>跟进人</label>
+          <input type="text" data-field="follow" value="${escapeAttr(p.follow || '')}" placeholder="例如：杨燕">
+        </div>
+        <div>
+          <label>备注 / 状态</label>
+          <input type="text" data-field="note" value="${escapeAttr(p.note || '')}" placeholder="例如：今天入职">
+        </div>
+      </div>
+    </div>`;
+}
+
 function escapeAttr(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -293,21 +379,45 @@ function escapeText(s) {
 function renderEditors() {
   const ivEditor = $('#iv-editor');
   const roleEditor = $('#role-editor');
+  const celeEditor = $('#cele-editor');
+  const cele = normalizeCelebrate(state.celebrate);
+  state.celebrate = cele;
   ivEditor.innerHTML = state.interviews.length
     ? state.interviews.map(ivCardHTML).join('')
     : '<p class="editor-empty">暂无面试，点击下方「添加面试」</p>';
   roleEditor.innerHTML = state.roles.length
     ? state.roles.map(roleCardHTML).join('')
     : '<p class="editor-empty">暂无岗位，点击下方「添加岗位」</p>';
+  if (celeEditor) {
+    celeEditor.innerHTML = cele.people.length
+      ? cele.people.map(celeCardHTML).join('')
+      : '<p class="editor-empty">暂无入职同学，打开开关后添加</p>';
+  }
   $('#field-date').value = state.date || '';
   $('#iv-count').textContent = String(state.interviews.length);
   $('#role-count').textContent = String(state.roles.length);
+  const celeCount = $('#cele-count');
+  if (celeCount) celeCount.textContent = String(cele.people.length);
+  const en = $('#cele-enabled');
+  if (en) en.checked = !!cele.enabled;
+  const kicker = $('#cele-kicker');
+  if (kicker) kicker.value = cele.kicker || '恭喜';
+  const summary = $('#cele-summary');
+  if (summary) summary.value = cele.summary || '';
+  const cheer = $('#cele-cheer');
+  if (cheer) cheer.value = cele.cheer || '';
+  const body = $('#cele-body');
+  if (body) body.hidden = !cele.enabled;
 }
 
 function syncFromFormAndPreview() {
   collectStateFromForm();
   $('#iv-count').textContent = String(state.interviews.length);
   $('#role-count').textContent = String(state.roles.length);
+  const celeCount = $('#cele-count');
+  if (celeCount) celeCount.textContent = String((state.celebrate?.people || []).length);
+  const body = $('#cele-body');
+  if (body) body.hidden = !state.celebrate?.enabled;
   pushToBoard();
 }
 
@@ -335,6 +445,22 @@ function removeInterview(idx) {
 function removeRole(idx) {
   collectStateFromForm();
   state.roles.splice(idx, 1);
+  renderEditors();
+  pushToBoard();
+}
+
+function addCelebratePerson() {
+  collectStateFromForm();
+  if (!state.celebrate) state.celebrate = defaultCelebrate();
+  state.celebrate.enabled = true;
+  state.celebrate.people.push({ name: '', title: '', follow: '', note: '' });
+  renderEditors();
+  pushToBoard();
+}
+
+function removeCelebratePerson(idx) {
+  collectStateFromForm();
+  state.celebrate.people.splice(idx, 1);
   renderEditors();
   pushToBoard();
 }
@@ -367,7 +493,8 @@ function importJSON(file) {
       state = {
         date: data.date || '',
         interviews: Array.isArray(data.interviews) ? data.interviews : [],
-        roles: Array.isArray(data.roles) ? data.roles : []
+        roles: Array.isArray(data.roles) ? data.roles : [],
+        celebrate: normalizeCelebrate(data.celebrate)
       };
       renderEditors();
       pushToBoard();
@@ -394,6 +521,32 @@ function bindEvents() {
   $('#iv-editor').addEventListener('change', syncFromFormAndPreview);
   $('#role-editor').addEventListener('input', syncFromFormAndPreview);
   $('#role-editor').addEventListener('change', syncFromFormAndPreview);
+  const celeEd = $('#cele-editor');
+  if (celeEd) {
+    celeEd.addEventListener('input', syncFromFormAndPreview);
+    celeEd.addEventListener('change', syncFromFormAndPreview);
+    celeEd.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action="remove-cele"]');
+      if (!btn) return;
+      const card = btn.closest('.item-card');
+      const idx = Number(card?.dataset.idx);
+      if (!Number.isNaN(idx)) removeCelebratePerson(idx);
+    });
+  }
+  ['cele-enabled', 'cele-kicker', 'cele-summary', 'cele-cheer'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', syncFromFormAndPreview);
+    el.addEventListener('change', () => {
+      if (id === 'cele-enabled') {
+        collectStateFromForm();
+        renderEditors();
+        pushToBoard();
+      } else {
+        syncFromFormAndPreview();
+      }
+    });
+  });
 
   $('#iv-editor').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action="remove-iv"]');
@@ -417,6 +570,8 @@ function bindEvents() {
   $('#btn-client-delete').addEventListener('click', deleteClient);
   $('#btn-add-iv').addEventListener('click', addInterview);
   $('#btn-add-role').addEventListener('click', addRole);
+  const addCele = $('#btn-add-cele');
+  if (addCele) addCele.addEventListener('click', addCelebratePerson);
   $('#btn-refresh').addEventListener('click', () => {
     syncFromFormAndPreview();
     setStatus('预览已刷新');

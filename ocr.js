@@ -117,9 +117,10 @@ function normalizeParsed(raw) {
   return out;
 }
 
-async function callDeepSeekVision({ apiKey, baseUrl, model, dataUrls, hasRoles, hasIv }) {
+async function callDeepSeekVision({ apiKey, baseUrl, model, dataUrls, hasRoles, hasIv, templateType }) {
+  const tpl = getTemplate(templateType);
   const content = [
-    { type: 'text', text: buildOcrPrompt(hasRoles, hasIv) }
+    { type: 'text', text: tpl.ocrPrompt(hasRoles, hasIv) }
   ];
   for (const url of dataUrls) {
     content.push({
@@ -174,6 +175,10 @@ async function callDeepSeekVision({ apiKey, baseUrl, model, dataUrls, hasRoles, 
   } catch {
     throw new Error('模型返回不是合法 JSON，请重试或换更清晰的截图');
   }
+  if (templateType === 'demandTable') {
+    const dm = normalizeDemand(parsed);
+    return { date: typeof parsed.date === 'string' ? parsed.date.trim() : '', demandCount: dm.demandCount, resumeTarget: dm.resumeTarget, rows: dm.rows };
+  }
   return normalizeParsed(parsed);
 }
 
@@ -215,6 +220,10 @@ function applyPendingToForm() {
   const res = window.BoardApp.applyOcrResult(parsed, meta);
   hidePreview();
   pendingRunClient = null;
+  if (res && res.reason === 'template') {
+    setOcrStatus(`客户「${meta.client}」的模板已更换，识别结果已丢弃，请重新识别`, true);
+    return;
+  }
   if (!res || !res.ok) {
     setOcrStatus(`客户「${meta.client}」已不存在，识别结果已丢弃`, true);
     return;
@@ -258,11 +267,13 @@ async function onRecognize() {
   }
 
   const hasRoles = !!uploadedRolesDataUrl;
-  const hasIv = !!uploadedIvDataUrl;
+  const startTemplate = window.BoardApp.getTemplateType();
+  const hasIv = !!uploadedIvDataUrl && !!getTemplate(startTemplate).ocrUploads.b;
   const startClient = window.BoardApp.getClient();
   const dataUrls = [];
   if (hasRoles) dataUrls.push(uploadedRolesDataUrl);
   if (hasIv) dataUrls.push(uploadedIvDataUrl);
+  if (!dataUrls.length) { setOcrStatus('请上传截图', true); return; }
 
   const btn = document.getElementById('btn-ocr-run');
   if (btn) btn.disabled = true;
@@ -277,9 +288,10 @@ async function onRecognize() {
       model: settings.model,
       dataUrls,
       hasRoles,
-      hasIv
+      hasIv,
+      templateType: startTemplate
     });
-    showPreview(parsed, { hasRoles, hasIv, client: pendingRunClient || startClient });
+    showPreview(parsed, { hasRoles, hasIv, templateType: startTemplate, client: pendingRunClient || startClient });
   } catch (err) {
     console.error(err);
     setOcrStatus(err.message || String(err), true);
@@ -403,5 +415,16 @@ window.addEventListener('client-renamed', (e) => {
   }
   if (pendingRunClient === from) pendingRunClient = to;
 });
+
+function applyOcrUploadLabels(type) {
+  const tpl = getTemplate(type);
+  const boxes = document.querySelectorAll('.ocr-file-box');
+  if (boxes[0]) boxes[0].querySelector('.file-title').textContent = tpl.ocrUploads.a;
+  if (boxes[1]) {
+    boxes[1].hidden = !tpl.ocrUploads.b;
+    if (tpl.ocrUploads.b) boxes[1].querySelector('.file-title').textContent = tpl.ocrUploads.b;
+  }
+}
+window.addEventListener('template-changed', (e) => applyOcrUploadLabels(e.detail.type));
 
 document.addEventListener('DOMContentLoaded', bindOcrUi);

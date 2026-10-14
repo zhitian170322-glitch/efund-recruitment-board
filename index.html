@@ -355,6 +355,15 @@
   .ai-settings[open] summary { margin-bottom: 12px; }
   .key-saved { font-size: 14px; font-weight: 700; color: var(--ok); margin-bottom: 8px; }
 
+
+  .field-row.two-even { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-row.three { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; }
+  .row-actions { display: flex; gap: 6px; }
+  #client-dialog { border: none; border-radius: 20px; padding: 24px; width: min(420px, 92vw); box-shadow: 0 30px 80px rgba(0,0,0,.25); }
+  #client-dialog::backdrop { background: rgba(0,0,0,.25); backdrop-filter: blur(4px); }
+  #client-dialog h3 { font-size: 18px; font-weight: 650; margin-bottom: 14px; letter-spacing: -0.02em; }
+  .dlg-error { color: var(--urgent); font-size: 12px; font-weight: 600; min-height: 1.2em; margin-top: 8px; }
+
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -392,6 +401,13 @@
           <button type="button" class="btn btn-primary btn-sm" id="btn-client-add">新增客户</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btn-client-rename">重命名</button>
           <button type="button" class="btn btn-danger btn-sm" id="btn-client-delete">删除</button>
+        </div>
+        <div class="field-row" style="margin-top:12px">
+          <label for="client-template">模板类型（本客户）</label>
+          <select id="client-template"></select>
+        </div>
+        <div class="section-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-restore-efund">恢复易方达 10/14 原内容</button>
         </div>
         <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。数据被误改可「撤销上次识图」，或 <a href="#" id="btn-load-sample" style="color:var(--link)">载入10月14日示例</a>（需确认）后手动修改。</p>
       </div>
@@ -468,6 +484,7 @@
       </div>
 
 
+      <div id="form-cards">
       <div class="panel-section">
         <h2>入职庆祝 <span class="count"><span id="cele-count">0</span> 人</span></h2>
         <div class="field-row check">
@@ -513,6 +530,23 @@
         </div>
         <p class="hint-tip">勾选「重点岗位」会显示红色「重点」标签。进展不用写「进展：」前缀。</p>
       </div>
+      </div>
+      <div id="form-demand" hidden>
+        <div class="panel-section">
+          <h2>需求表 <span class="count"><span id="dm-row-count">0</span> 条</span></h2>
+          <div class="field-row two-even">
+            <div><label for="dm-count">今日需求数</label><input type="text" id="dm-count" inputmode="numeric"></div>
+            <div><label for="dm-target">今日简历目标</label><input type="text" id="dm-target" inputmode="numeric"></div>
+          </div>
+          <p class="hint-tip" style="margin:-2px 0 12px">留空则自动：需求数 = 行数，简历目标 = 每日可推合计。</p>
+          <div id="dm-editor"></div>
+          <div class="section-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-add-dm">添加需求</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-dm-sample">载入示例</button>
+          </div>
+          <p class="hint-tip">相邻的同一岗位会自动分组编号、同色显示；用 ↑ ↓ 调整顺序。紧急 / 重点推进 标红。</p>
+        </div>
+      </div>
     </aside>
 
     <section class="preview-wrap">
@@ -528,20 +562,37 @@
     </section>
   </div>
 
+  <dialog id="client-dialog">
+    <form id="client-dialog-form" method="dialog">
+      <h3>新增客户</h3>
+      <label for="new-client-name">客户名称</label>
+      <input type="text" id="new-client-name" placeholder="例如：华夏" autocomplete="off">
+      <label for="new-client-template" style="margin-top:12px">模板</label>
+      <select id="new-client-template"></select>
+      <div id="new-client-error" class="dlg-error"></div>
+      <div class="section-actions" style="justify-content:flex-end;margin-top:16px">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-client-dialog-cancel">取消</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="btn-client-dialog-ok">创建</button>
+      </div>
+    </form>
+  </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <script src="templates.js"></script>
   <script src="app.js"></script>
   <script src="ocr.js"></script>
   <script src="export.js"></script>
   <script>
     // Fit iframe into preview shell
+    window.fitPreview = fitPreview;
     function fitPreview() {
       const shell = document.getElementById('frame-shell');
       const frame = document.getElementById('board-frame');
       if (!shell || !frame) return;
       const shellW = shell.clientWidth;
-      const scale = Math.min(1, shellW / 1400);
+      const bw = window.currentBoardWidth || 1400;
+      const scale = Math.min(1, shellW / bw);
       frame.style.transform = 'scale(' + scale + ')';
-      frame.style.width = '1400px';
+      frame.style.width = bw + 'px';
       // Approximate board height; iframe scrolls inside if taller
       const shellH = shell.clientHeight;
       frame.style.height = (shellH / scale) + 'px';

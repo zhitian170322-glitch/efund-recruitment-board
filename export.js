@@ -12,7 +12,8 @@ function stampName(dateStr, ext) {
   const m = String(dateStr || '').match(/(\d{1,2})\s*月\s*(\d{1,2})/);
   const stamp = m ? m[1].padStart(2, '0') + m[2].padStart(2, '0') : (dateStr || 'board').replace(/[^\d\w\u4e00-\u9fff-]+/g, '_');
   const safeClient = client.replace(/[\\/:*?"<>|]+/g, '_');
-  return `${safeClient}招聘看板-${stamp}.${ext}`;
+  const kind = (window.BoardApp && window.BoardApp.getTemplateType && window.BoardApp.getTemplateType() === 'demandTable') ? '招聘需求表' : '招聘看板';
+  return `${safeClient}${kind}-${stamp}.${ext}`;
 }
 
 function downloadBlob(blob, filename) {

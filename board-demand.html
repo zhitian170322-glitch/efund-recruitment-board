@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>招聘需求表</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #f5f5f7; color: #1d1d1f;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 36px; }
+  .wrap { width: 1728px; margin: 0 auto; }
+  .header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+  h1 { font-size: 60px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.08; }
+  .date { font-size: 26px; font-weight: 600; color: #3a3a3c; margin-top: 8px; }
+  .stats { display: flex; gap: 14px; }
+  .stat { background: #fff; border-radius: 22px; padding: 16px 28px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05); min-width: 220px; }
+  .stat .k { font-size: 18px; font-weight: 600; color: #6e6e73; }
+  .stat .v { font-size: 52px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+  .stat.target .v { color: #0071e3; }
+  .table-card { background: #fff; border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 10px 30px rgba(0,0,0,.05); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  th {
+    font-size: 19px; font-weight: 700; color: #3a3a3c; text-align: center;
+    padding: 16px 12px; background: #fbfbfd; border-bottom: 1px solid rgba(0,0,0,.08);
+  }
+  td {
+    font-size: 19px; font-weight: 600; line-height: 1.5; padding: 14px 14px;
+    border-bottom: 1px solid rgba(0,0,0,.06); vertical-align: middle; text-align: center;
+  }
+  td.dir { text-align: left; font-weight: 500; color: #1d1d1f; font-size: 18px; }
+  td.idx { font-weight: 700; color: #3a3a3c; }
+  td.role { font-weight: 700; font-size: 20px; }
+  td.num { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  td.note { font-weight: 700; }
+  td.note.hot { color: #d70015; }
+  .pill { display: inline-block; padding: 6px 14px; border-radius: 980px; font-size: 17px; font-weight: 700; white-space: nowrap; }
+  .pill.hot { background: #ff3b30; color: #fff; }
+  .pill.push { background: #d70015; color: #fff; }
+  .pill.normal { background: #f0f0f3; color: #3a3a3c; }
+  tr.group-start td { border-top: 2px solid rgba(0,0,0,.07); }
+  .empty { padding: 60px; text-align: center; color: #86868b; font-size: 22px; }
+  footer { text-align: center; font-size: 16px; color: #3a3a3c; margin-top: 18px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="wrap" id="board">
+    <div class="header">
+      <div>
+        <h1 id="title">招聘需求表</h1>
+        <div class="date" id="date"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">今日需求数</div><div class="v" id="demand">0</div></div>
+        <div class="stat target"><div class="k">今日简历目标</div><div class="v" id="target">0</div></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <table>
+        <colgroup>
+          <col style="width:70px"><col style="width:170px"><col style="width:170px"><col style="width:100px">
+          <col style="width:100px"><col><col style="width:130px"><col style="width:220px">
+        </colgroup>
+        <thead><tr><th>序号</th><th>岗位</th><th>项目经理</th><th>每日可推</th><th>已推荐</th><th>简历筛选方向</th><th>紧急程度</th><th>备注</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <footer>数据来自招聘需求表</footer>
+  </div>
+<script>
+  var GROUP_COLORS = ['#eef4ff', '#fff6e0', '#eaf7ee', '#fdeef3', '#f1eefc', '#e8f6f8'];
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function urgencyPill(u) {
+    var cls = u === '紧急' ? 'hot' : (u === '重点推进' ? 'push' : 'normal');
+    return u ? '<span class="pill ' + cls + '">' + esc(u) + '</span>' : '';
+  }
+  function renderBoard(data) {
+    data = data || {};
+    var d = data.demand || {};
+    var rows = Array.isArray(d.rows) ? d.rows : [];
+    document.getElementById('title').textContent = (data.client || '') + '招聘需求表';
+    document.getElementById('date').textContent = data.date || '';
+    var sum = rows.reduce(function (a, r) { var n = parseFloat(r.daily); return a + (isNaN(n) ? 0 : n); }, 0);
+    document.getElementById('demand').textContent = (d.demandCount !== '' && d.demandCount != null) ? d.demandCount : rows.length;
+    document.getElementById('target').textContent = (d.resumeTarget !== '' && d.resumeTarget != null) ? d.resumeTarget : sum;
+    document.title = (data.client || '') + '招聘需求表 · ' + (data.date || '');
+    var tb = document.getElementById('rows');
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="8" class="empty">暂无需求，在左侧添加</td></tr>'; return; }
+    // groups of consecutive rows with same role
+    var groups = [];
+    rows.forEach(function (r) {
+      var g = groups[groups.length - 1];
+      if (g && g.role === r.role) g.rows.push(r); else groups.push({ role: r.role, rows: [r] });
+    });
+    var html = '';
+    groups.forEach(function (g, gi) {
+      var bg = GROUP_COLORS[gi % GROUP_COLORS.length];
+      // note spans: merge consecutive identical non-empty notes
+      var noteSpan = [];
+      for (var i = 0; i < g.rows.length; i++) {
+        if (i > 0 && g.rows[i].note && g.rows[i].note === g.rows[i - 1].note) { noteSpan[i] = 0; var j = i - 1; while (noteSpan[j] === 0) j--; noteSpan[j]++; }
+        else noteSpan[i] = 1;
+      }
+      g.rows.forEach(function (r, i) {
+        var hot = r.urgency === '紧急' || r.urgency === '重点推进';
+        html += '<tr class="' + (i === 0 ? 'group-start' : '') + '" style="background:' + bg + '">';
+        html += '<td class="idx">' + (i + 1) + '</td>';
+        if (i === 0) html += '<td class="role" rowspan="' + g.rows.length + '">' + esc(g.role) + '</td>';
+        html += '<td>' + esc(r.pm) + '</td>';
+        html += '<td class="num">' + esc(r.daily) + '</td>';
+        html += '<td class="num">' + esc(r.recommended) + '</td>';
+        html += '<td class="dir">' + esc(r.direction) + '</td>';
+        html += '<td>' + urgencyPill(r.urgency) + '</td>';
+        if (noteSpan[i] > 0) html += '<td class="note' + (hot ? ' hot' : '') + '" rowspan="' + noteSpan[i] + '">' + esc(r.note) + '</td>';
+        html += '</tr>';
+      });
+    });
+    tb.innerHTML = html;
+  }
+  window.renderBoard = renderBoard;
+  window.addEventListener('message', function (ev) { if (ev.data && ev.data.type === 'BOARD_DATA') renderBoard(ev.data.payload); });
+  try { parent.postMessage({ type: 'BOARD_READY' }, '*'); } catch (e) {}
+</script>
+</body>
+</html>

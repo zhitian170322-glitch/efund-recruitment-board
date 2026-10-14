@@ -105,8 +105,19 @@ function normalizeCelebrate(c) {
     })) : []
   };
 }
-function emptyClientData() {
-  return { date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate() };
+function emptyClientData(templateType) {
+  const t = BoardTemplates[templateType] ? templateType : 'cards';
+  return {
+    templateType: t,
+    date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate(),
+    demand: normalizeDemand(t === 'demandTable' ? BoardTemplates.demandTable.empty() : null)
+  };
+}
+function eFundDefault() {
+  const d = structuredClone(DEFAULT_DATA);
+  d.templateType = 'cards';
+  d.demand = normalizeDemand(null);
+  return d;
 }
 function loadClientStore() {
   try {
@@ -114,23 +125,18 @@ function loadClientStore() {
     if (raw && raw.clients && Object.keys(raw.clients).length) {
       if (!raw.clients[raw.current]) raw.current = Object.keys(raw.clients)[0];
       for (const k of Object.keys(raw.clients)) {
-        raw.clients[k].celebrate = normalizeCelebrate(raw.clients[k].celebrate);
+        raw.clients[k] = normalizeClientData(raw.clients[k]);
       }
       return raw;
     }
   } catch (e) { /* ignore */ }
   // migrate: no previous per-client data existed; seed 易方达 with sample
-  return { current: DEFAULT_CLIENT, clients: { [DEFAULT_CLIENT]: structuredClone(DEFAULT_DATA) } };
+  return { current: DEFAULT_CLIENT, clients: { [DEFAULT_CLIENT]: eFundDefault() } };
 }
 function saveClientStore() {
   if (!clientStore || !clientStore.clients[clientStore.current]) return;
   try {
-    clientStore.clients[clientStore.current] = {
-      date: state.date || '',
-      interviews: state.interviews || [],
-      roles: state.roles || [],
-      celebrate: normalizeCelebrate(state.celebrate)
-    };
+    clientStore.clients[clientStore.current] = normalizeClientData(state);
     localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
   } catch (e) { console.warn('save failed', e); }
 }
@@ -148,13 +154,9 @@ function renderClientSelect() {
 function loadClient(name) {
   clientStore.current = name;
   const d = clientStore.clients[name] || emptyClientData();
-  state = {
-    date: d.date || '',
-    interviews: d.interviews || [],
-    roles: d.roles || [],
-    celebrate: normalizeCelebrate(d.celebrate)
-  };
+  state = structuredClone(normalizeClientData(d));
   renderClientSelect();
+  applyTemplateView(state.templateType);
   renderEditors();
   pushToBoard();
   localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
@@ -174,13 +176,82 @@ function askClientName(msg, def) {
   return n;
 }
 function addClient() {
-  const n = askClientName('新客户名称（例如：华夏）');
-  if (!n) return;
+  const dlg = $('#client-dialog');
+  if (!dlg || typeof dlg.showModal !== 'function') {
+    const n = askClientName('新客户名称（例如：华夏）');
+    if (n) createClient(n, 'cards');
+    return;
+  }
+  $('#new-client-name').value = '';
+  $('#new-client-template').innerHTML = templateOptionsHTML('cards');
+  $('#new-client-error').textContent = '';
+  dlg.showModal();
+  setTimeout(() => $('#new-client-name').focus(), 30);
+}
+function confirmAddClient(e) {
+  if (e) e.preventDefault();
+  const n = ($('#new-client-name').value || '').trim();
+  const t = $('#new-client-template').value;
+  if (!n) { $('#new-client-error').textContent = '请填写客户名称'; return; }
+  if (clientStore.clients[n]) { $('#new-client-error').textContent = '已有同名客户'; return; }
+  $('#client-dialog').close();
+  createClient(n, t);
+}
+function createClient(n, t) {
   collectStateFromForm();
   saveClientStore();
-  clientStore.clients[n] = emptyClientData();
+  clientStore.clients[n] = emptyClientData(t);
   loadClient(n);
-  setStatus(`已新增客户「${n}」`);
+  updateUndoOcrButton();
+  window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: n } }));
+  setStatus(`已新增客户「${n}」（${getTemplate(t).label}）`);
+}
+function templateOptionsHTML(selected) {
+  return Object.keys(BoardTemplates).map((k) =>
+    `<option value="${k}"${k === selected ? ' selected' : ''}>${escapeText(BoardTemplates[k].label)}</option>`).join('');
+}
+function changeTemplateType(t) {
+  if (!BoardTemplates[t] || t === state.templateType) return;
+  if (!confirm(`把「${getClient()}」的模板改为「${getTemplate(t).label}」？两种模板的数据都会保留，可随时切回。`)) {
+    $('#client-template').value = state.templateType;
+    return;
+  }
+  collectStateFromForm();
+  state.templateType = t;
+  saveClientStore();
+  loadClient(getClient());
+  window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: getClient() } }));
+  setStatus(`模板已改为「${getTemplate(t).label}」`);
+}
+function restoreEfund() {
+  if (!confirm('把「易方达」恢复为内置的 10月14日 原内容？易方达当前的数据会被覆盖（其他客户不受影响）。')) return;
+  if (clientStore.current !== DEFAULT_CLIENT) { collectStateFromForm(); saveClientStore(); }
+  clientStore.clients[DEFAULT_CLIENT] = eFundDefault();
+  loadClient(DEFAULT_CLIENT);
+  updateUndoOcrButton();
+  window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: DEFAULT_CLIENT } }));
+  setStatus('易方达已恢复为 10月14日 原内容');
+}
+let currentBoardSrc = null;
+function applyTemplateView(type) {
+  const tpl = getTemplate(type);
+  Object.keys(BoardTemplates).forEach((k) => {
+    const el = $(BoardTemplates[k].formSelector);
+    if (el) el.hidden = k !== type;
+  });
+  const sel = $('#client-template');
+  if (sel) sel.innerHTML = templateOptionsHTML(type);
+  window.currentBoardWidth = tpl.boardWidth;
+  const iframe = getIframe();
+  if (iframe && currentBoardSrc !== tpl.boardSrc) {
+    currentBoardSrc = tpl.boardSrc;
+    boardReady = false;
+    if (!iframe.getAttribute('src') || !iframe.getAttribute('src').startsWith(tpl.boardSrc)) {
+      iframe.setAttribute('src', tpl.boardSrc);
+    }
+  }
+  if (typeof window.fitPreview === 'function') window.fitPreview();
+  window.dispatchEvent(new CustomEvent('template-changed', { detail: { type } }));
 }
 function renameClient() {
   const old = clientStore.current;
@@ -209,7 +280,7 @@ function deleteClient() {
   setStatus(`已删除「${cur}」`);
 }
 
-let state = structuredClone(DEFAULT_DATA);
+let state = eFundDefault();
 let boardReady = false;
 let pendingPush = false;
 
@@ -275,7 +346,8 @@ function collectStateFromForm() {
     cheer: ($('#cele-cheer')?.value || '').trim(),
     people
   };
-  state = { date, interviews, roles, celebrate };
+  const demand = collectDemandFromForm();
+  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, demand };
   return state;
 }
 
@@ -367,6 +439,77 @@ function celeCardHTML(p, idx) {
     </div>`;
 }
 
+
+function demandRowHTML(r, idx, total) {
+  const opts = URGENCY_OPTIONS.map((u) => `<option value="${u}"${r.urgency === u ? ' selected' : ''}>${u}</option>`).join('');
+  return `
+    <div class="item-card" data-idx="${idx}">
+      <div class="item-card-head">
+        <span class="item-label">需求 #${idx + 1}</span>
+        <span class="row-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-action="up-dm"${idx === 0 ? ' disabled' : ''} title="上移">↑</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="down-dm"${idx === total - 1 ? ' disabled' : ''} title="下移">↓</button>
+          <button type="button" class="btn btn-danger btn-sm" data-action="remove-dm">删除</button>
+        </span>
+      </div>
+      <div class="field-row two-even">
+        <div><label>岗位</label><input type="text" data-field="role" value="${escapeAttr(r.role)}" placeholder="例如：Java开发"></div>
+        <div><label>项目经理</label><input type="text" data-field="pm" value="${escapeAttr(r.pm)}"></div>
+      </div>
+      <div class="field-row three">
+        <div><label>每日可推</label><input type="text" data-field="daily" value="${escapeAttr(r.daily)}" inputmode="numeric"></div>
+        <div><label>已推荐</label><input type="text" data-field="recommended" value="${escapeAttr(r.recommended)}" inputmode="numeric"></div>
+        <div><label>紧急程度</label><select data-field="urgency">${opts}</select></div>
+      </div>
+      <div class="field-row"><label>简历筛选方向</label><textarea data-field="direction" rows="3">${escapeText(r.direction)}</textarea></div>
+      <div class="field-row"><label>备注</label><input type="text" data-field="note" value="${escapeAttr(r.note)}"></div>
+    </div>`;
+}
+function collectDemandFromForm() {
+  if (!$('#dm-editor')) return normalizeDemand(state.demand);
+  const rows = $$('#dm-editor .item-card').map((card) => {
+    const v = (f) => (card.querySelector(`[data-field="${f}"]`)?.value || '').trim();
+    return { role: v('role'), pm: v('pm'), daily: v('daily'), recommended: v('recommended'), direction: v('direction'), urgency: v('urgency') || '一般', note: v('note') };
+  });
+  return normalizeDemand({
+    demandCount: $('#dm-count')?.value || '',
+    resumeTarget: $('#dm-target')?.value || '',
+    rows
+  });
+}
+function renderDemandEditor() {
+  const ed = $('#dm-editor');
+  if (!ed) return;
+  const d = normalizeDemand(state.demand);
+  state.demand = d;
+  ed.innerHTML = d.rows.length ? d.rows.map((r, i) => demandRowHTML(r, i, d.rows.length)).join('')
+    : '<p class="editor-empty">暂无需求，点击下方「添加需求」，或用截图识别 / 载入示例</p>';
+  $('#dm-count').value = d.demandCount;
+  $('#dm-target').value = d.resumeTarget;
+  updateDemandAuto();
+}
+function updateDemandAuto() {
+  const d = state.demand || { rows: [] };
+  const sum = d.rows.reduce((a, r) => { const n = parseFloat(r.daily); return a + (isNaN(n) ? 0 : n); }, 0);
+  if ($('#dm-count')) $('#dm-count').placeholder = `自动：${d.rows.length}`;
+  if ($('#dm-target')) $('#dm-target').placeholder = `自动：${sum}`;
+  if ($('#dm-row-count')) $('#dm-row-count').textContent = String(d.rows.length);
+}
+function demandMutate(fn) {
+  collectStateFromForm();
+  fn(state.demand.rows);
+  renderEditors();
+  pushToBoard();
+}
+function loadDemandSample() {
+  if (state.demand.rows.length && !confirm('用截图里的示例需求表覆盖当前需求？')) return;
+  collectStateFromForm();
+  state.demand = normalizeDemand(BoardTemplates.demandTable.sample());
+  renderEditors();
+  pushToBoard();
+  setStatus('已载入需求表示例');
+}
+
 function escapeAttr(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -414,6 +557,7 @@ function renderEditors() {
   if (cheer) cheer.value = cele.cheer || '';
   const body = $('#cele-body');
   if (body) body.hidden = !cele.enabled;
+  renderDemandEditor();
 }
 
 function syncFromFormAndPreview() {
@@ -424,6 +568,7 @@ function syncFromFormAndPreview() {
   if (celeCount) celeCount.textContent = String((state.celebrate?.people || []).length);
   const body = $('#cele-body');
   if (body) body.hidden = !state.celebrate?.enabled;
+  updateDemandAuto();
   pushToBoard();
 }
 
@@ -473,7 +618,7 @@ function removeCelebratePerson(idx) {
 
 function exportJSON() {
   collectStateFromForm();
-  const blob = new Blob([JSON.stringify({ client: getClient(), ...state }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ client: getClient(), ...normalizeClientData(state) }, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   const stamp = (state.date || 'board').replace(/[^\d\w\u4e00-\u9fff-]+/g, '_');
   a.href = URL.createObjectURL(blob);
@@ -496,12 +641,8 @@ function importJSON(file) {
         clientStore.current = cname;
         renderClientSelect();
       }
-      state = {
-        date: data.date || '',
-        interviews: Array.isArray(data.interviews) ? data.interviews : [],
-        roles: Array.isArray(data.roles) ? data.roles : [],
-        celebrate: normalizeCelebrate(data.celebrate)
-      };
+      state = normalizeClientData(data);
+      applyTemplateView(state.templateType);
       renderEditors();
       pushToBoard();
       setStatus(`已导入到「${getClient()}」`);
@@ -577,6 +718,31 @@ function bindEvents() {
   $('#btn-add-iv').addEventListener('click', addInterview);
   $('#btn-add-role').addEventListener('click', addRole);
   $('#btn-ocr-undo')?.addEventListener('click', undoLastOcr);
+  $('#btn-restore-efund')?.addEventListener('click', restoreEfund);
+  $('#client-template')?.addEventListener('change', (e) => changeTemplateType(e.target.value));
+  $('#client-dialog-form')?.addEventListener('submit', confirmAddClient);
+  $('#btn-client-dialog-cancel')?.addEventListener('click', () => $('#client-dialog').close());
+  $('#btn-add-dm')?.addEventListener('click', () => demandMutate((rows) => {
+    const last = rows[rows.length - 1];
+    rows.push({ role: last ? last.role : '', pm: '', daily: '', recommended: '', direction: '', urgency: '一般', note: '' });
+  }));
+  $('#btn-dm-sample')?.addEventListener('click', loadDemandSample);
+  ['dm-count', 'dm-target'].forEach((id) => $('#' + id)?.addEventListener('input', syncFromFormAndPreview));
+  const dmEd = $('#dm-editor');
+  if (dmEd) {
+    dmEd.addEventListener('input', syncFromFormAndPreview);
+    dmEd.addEventListener('change', syncFromFormAndPreview);
+    dmEd.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const idx = Number(btn.closest('.item-card')?.dataset.idx);
+      if (Number.isNaN(idx)) return;
+      const a = btn.dataset.action;
+      if (a === 'remove-dm') demandMutate((rows) => rows.splice(idx, 1));
+      if (a === 'up-dm' && idx > 0) demandMutate((rows) => rows.splice(idx - 1, 0, rows.splice(idx, 1)[0]));
+      if (a === 'down-dm') demandMutate((rows) => { if (idx < rows.length - 1) rows.splice(idx + 1, 0, rows.splice(idx, 1)[0]); });
+    });
+  }
   $('#btn-load-sample')?.addEventListener('click', (e) => { e.preventDefault(); loadSampleIntoCurrent(); });
   const addCele = $('#btn-add-cele');
   if (addCele) addCele.addEventListener('click', addCelebratePerson);
@@ -613,7 +779,16 @@ function getBoardState() {
 
 
 function mergeOcrInto(base, parsed, meta) {
+  if (meta.templateType === 'demandTable') {
+    const out = normalizeClientData(base);
+    if (parsed.date && String(parsed.date).trim()) out.date = String(parsed.date).trim();
+    const dm = normalizeDemand(parsed);
+    out.demand = { demandCount: dm.demandCount, resumeTarget: dm.resumeTarget, rows: dm.rows };
+    return out;
+  }
   const out = {
+    templateType: base.templateType || 'cards',
+    demand: normalizeDemand(base.demand),
     date: base.date || '',
     interviews: Array.isArray(base.interviews) ? base.interviews.slice() : [],
     roles: Array.isArray(base.roles) ? base.roles.slice() : [],
@@ -648,6 +823,9 @@ function applyOcrResult(parsed, meta) {
   const target = meta.client;
   if (!target || !clientStore.clients[target]) {
     return { ok: false, reason: 'gone', client: target };
+  }
+  if (meta.templateType && (clientStore.clients[target].templateType || 'cards') !== meta.templateType) {
+    return { ok: false, reason: 'template', client: target };
   }
   if (target === clientStore.current) {
     collectStateFromForm();
@@ -693,6 +871,8 @@ function undoLastOcr() {
 function normalizeClientData(d) {
   d = d || {};
   return {
+    templateType: BoardTemplates[d.templateType] ? d.templateType : 'cards',
+    demand: normalizeDemand(d.demand),
     date: d.date || '',
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
@@ -704,7 +884,13 @@ function normalizeClientData(d) {
 function loadSampleIntoCurrent() {
   const c = getClient();
   if (!confirm(`用内置的 10月14日 示例数据覆盖「${c}」当前内容？（可先导出 JSON 备份）`)) return;
-  state = structuredClone(DEFAULT_DATA);
+  if (state.templateType === 'demandTable') {
+    state.demand = normalizeDemand(BoardTemplates.demandTable.sample());
+  } else {
+    const keep = state.demand;
+    state = eFundDefault();
+    state.demand = keep;
+  }
   renderEditors();
   pushToBoard();
   setStatus(`「${c}」已载入示例数据`);
@@ -717,6 +903,7 @@ window.BoardApp = {
   getIframe,
   applyOcrResult,
   getClient,
+  getTemplateType: () => state.templateType || 'cards',
   hasClient: (n) => !!(clientStore && clientStore.clients[n])
 };
 

@@ -98,14 +98,12 @@ function stripPrefix(t) {
   return String(t || '').replace(/^\s*(?:简历筛选方向|用人经理偏好|备注要求|备注|进展)\s*[:：]\s*/, '').trim();
 }
 function cleanCardRole(r) {
-  let title = String(r?.title || '').trim();
-  let team = String(r?.team || r?.pm || r?.manager || '').trim();
-  let note = String(r?.note || r?.direction || '').trim();
-  let progress = String(r?.progress || '').trim();
-  const urg = String(r?.urgency || '');
-  const rawAll = String(r?.note || '') + '；' + String(r?.progress || '');
-  const urgRaw = rawAll.match(/紧急程度\s*[:：]\s*([^；;，,\s]*)/);
-  // PM embedded in note/progress
+  const S = (v) => (v == null ? '' : String(v)).trim();
+  const title = S(r?.title);
+  let team = S(r?.team || r?.pm || r?.manager);
+  let note = S(r?.note || r?.direction);
+  let progress = S(r?.progress);
+  // PM embedded in note/progress → team
   for (const field of ['note', 'progress']) {
     const v = field === 'note' ? note : progress;
     const m = v.match(PM_RE);
@@ -116,20 +114,28 @@ function cleanCardRole(r) {
     }
   }
   team = team.replace(/^(?:项目经理|负责人|用人经理|PM)\s*[:：]\s*/i, '').trim();
-  // split "简历筛选方向：...；备注：xxx" → note / progress
-  const remark = note.match(/[；;]\s*备注\s*[:：]\s*(.*)$/);
-  if (remark) {
-    note = note.slice(0, remark.index).trim();
-    if (!progress || /每日可推|已推荐|紧急程度/.test(progress)) progress = remark[1].trim();
+  // collect the four columns from explicit fields, progress text, or note text
+  const KEYS = ['每日可推', '已推荐', '紧急程度', '备注'];
+  const vals = { 每日可推: S(r?.daily), 已推荐: S(r?.recommended), 紧急程度: S(r?.urgency), 备注: S(r?.remark) };
+  const pull = (text) => {
+    let rest = text;
+    for (const k of KEYS) {
+      const re = new RegExp(k + '\\s*[:：]\\s*([^；;]*)');
+      const m = rest.match(re);
+      if (m) { if (!vals[k]) vals[k] = m[1].trim(); rest = rest.replace(m[0], ''); }
+    }
+    return rest.replace(/^[；;，,\s]+|[；;，,\s]+$/g, '').replace(/[；;]\s*[；;]/g, '；');
+  };
+  note = stripPrefix(pull(note));
+  const progRest = stripPrefix(pull(progress));
+  const hasCols = KEYS.some((k) => vals[k]);
+  if (hasCols) {
+    if (progRest && !vals['备注']) vals['备注'] = progRest;
+    progress = KEYS.filter((k) => vals[k]).map((k) => `${k}：${vals[k]}`).join('；');
+  } else {
+    progress = progRest;
   }
-  note = stripPrefix(note);
-  // drop numeric-column noise from progress
-  let featured = !!r?.featured || /紧急|重点/.test(urg);
-  if (urgRaw && /紧急|重点/.test(urgRaw[1])) featured = true;
-  progress = progress
-    .replace(/(?:每日可推|已推荐|紧急程度)\s*[:：]\s*[^；;，,]*[；;，,]?\s*/g, '')
-    .replace(/^[；;，,\s]+|[；;，,\s]+$/g, '');
-  progress = stripPrefix(progress);
+  const featured = !!r?.featured || /紧急|重点/.test(vals['紧急程度']);
   return { title, team, note, progress, featured };
 }
 

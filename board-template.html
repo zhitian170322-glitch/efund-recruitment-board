@@ -170,9 +170,11 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 14px;
     align-items: stretch;
+    grid-auto-rows: 1fr; /* every row as tall as the tallest card */
   }
 
   .iv {
+    min-height: 118px;
     background: var(--card);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
@@ -260,6 +262,8 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+    grid-auto-rows: 1fr; /* uniform role card height = tallest */
+    align-items: stretch;
   }
 
   .role {
@@ -270,6 +274,7 @@
     border: 1px solid rgba(0,0,0,.06);
     border-left: 5px solid #ff3b30;
     padding: 18px 18px 16px 16px;
+    height: 100%;
   }
 
   .role.featured {
@@ -440,8 +445,8 @@
 
     function renderBoard(data) {
       data = data || { date: '', interviews: [], roles: [] };
-      var interviews = Array.isArray(data.interviews) ? data.interviews : [];
-      var roles = Array.isArray(data.roles) ? data.roles : [];
+      var interviews = (Array.isArray(data.interviews) ? data.interviews : []).filter(function (iv) { return iv && String(iv.name || '').trim(); });
+      var roles = (Array.isArray(data.roles) ? data.roles : []).filter(function (r) { return r && (String(r.title || '').trim() || String(r.team || '').trim()); });
 
       document.getElementById('board-date').textContent = data.date || '—';
       var _bt = (data.client || '') + '招聘看板';
@@ -469,7 +474,7 @@
                   '<div class="iv-name">' + esc(iv.name || '') + '</div>' +
                   '<span class="iv-pill ' + roundClass(round) + '">' + esc(round) + '</span>' +
                 '</div>' +
-                '<div class="iv-when">' + esc(iv.when || '') + '</div>' +
+                '<div class="iv-when">' + (iv.when ? esc(iv.when) : '&nbsp;') + '</div>' +
               '</div>' +
             '</article>'
           );

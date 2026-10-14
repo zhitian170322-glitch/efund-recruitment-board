@@ -267,11 +267,12 @@ function applyTemplateView(type) {
   if (sel) sel.innerHTML = templateOptionsHTML(type);
   window.currentBoardWidth = tpl.boardWidth;
   const iframe = getIframe();
-  if (iframe && currentBoardSrc !== tpl.boardSrc) {
-    currentBoardSrc = tpl.boardSrc;
+  const src = tpl.boardSrc + (window.BUILD_VERSION ? `?v=${window.BUILD_VERSION}` : '');
+  if (iframe && currentBoardSrc !== src) {
+    currentBoardSrc = src;
     boardReady = false;
-    if (!iframe.getAttribute('src') || !iframe.getAttribute('src').startsWith(tpl.boardSrc)) {
-      iframe.setAttribute('src', tpl.boardSrc);
+    if (iframe.getAttribute('src') !== src) {
+      iframe.setAttribute('src', src);
     }
   }
   if (typeof window.fitPreview === 'function') window.fitPreview();

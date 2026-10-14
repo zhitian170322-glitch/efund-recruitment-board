@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板生成器</title>
 <style>
@@ -556,6 +557,7 @@
           </div>
         </div>
         <div class="section-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-clip">从剪贴板粘贴</button>
           <button type="button" class="btn btn-primary btn-sm" id="btn-ocr-run">识别并填入</button>
         </div>
         <div id="ocr-status"></div>
@@ -645,7 +647,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261014-1120" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -666,10 +668,11 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script src="templates.js"></script>
-  <script src="app.js"></script>
-  <script src="ocr.js"></script>
-  <script src="export.js"></script>
+  <script>window.BUILD_VERSION = "20261014-1120";</script>
+  <script src="templates.js?v=20261014-1120"></script>
+  <script src="app.js?v=20261014-1120"></script>
+  <script src="ocr.js?v=20261014-1120"></script>
+  <script src="export.js?v=20261014-1120"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

@@ -297,7 +297,8 @@ function renderSlot(key) {
 async function setSlotFile(key, file) {
   const slot = SLOTS[key];
   if (!slot) return;
-  if (file && !/^image\//.test(file.type || '')) { setOcrStatus('只支持图片（PNG / JPG / WebP / GIF）', true); return; }
+  if (file) file = asImageFile(file) || file;
+  if (file && !/^image\//.test(file.type || '')) { notify('只支持图片（PNG / JPG / WebP / GIF）', true); return; }
   if (file) pendingSlots.add(key);
   try {
     slot.set(file ? await fileToDataUrl(file) : null);
@@ -334,14 +335,74 @@ function pickPasteTarget() {
   if (!keys.length) return null;
   return keys.find((k) => !SLOTS[k].get() && !pendingSlots.has(k)) || (lastFocusedSlot && keys.includes(lastFocusedSlot) ? lastFocusedSlot : keys[0]);
 }
-function imageFromClipboard(e) {
-  const items = (e.clipboardData && e.clipboardData.items) || [];
-  for (const it of items) {
-    if (it.kind === 'file' && /^image\//.test(it.type)) return it.getAsFile();
-  }
-  const files = (e.clipboardData && e.clipboardData.files) || [];
-  for (const f of files) if (/^image\//.test(f.type)) return f;
+const IMG_EXT = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', bmp: 'image/bmp' };
+// Some sources (Windows Explorer copy, some apps) give files with an empty MIME type; fix it from the extension
+function asImageFile(f) {
+  if (!f) return null;
+  if (/^image\//.test(f.type || '')) return f;
+  const ext = String(f.name || '').toLowerCase().split('.').pop();
+  if (IMG_EXT[ext]) return new File([f], f.name, { type: IMG_EXT[ext] });
   return null;
+}
+function imageFromClipboard(e) {
+  const cd = e.clipboardData || window.clipboardData;
+  if (!cd) return null;
+  const items = cd.items ? Array.from(cd.items) : [];
+  for (const it of items) {
+    if (it.kind === 'file') {
+      const f = asImageFile(it.getAsFile());
+      if (f) return f;
+    }
+  }
+  const files = cd.files ? Array.from(cd.files) : [];
+  for (const f of files) {
+    const img = asImageFile(f);
+    if (img) return img;
+  }
+  return null;
+}
+function notify(msg, isError) {
+  if (typeof toast === 'function') toast(msg);
+  setOcrStatus(msg, !!isError);
+}
+function handlePaste(e, forcedKey) {
+  if (e.__boardPasteHandled) return;
+  e.__boardPasteHandled = true;
+  const inZone = forcedKey || (document.activeElement && document.activeElement.closest && document.activeElement.closest('.paste-zone'));
+  if (!inZone && isTextTarget(document.activeElement)) return; // don't hijack text fields
+  const f = imageFromClipboard(e);
+  if (!f) {
+    // only complain when the user was clearly aiming at a slot or at no text field
+    notify('剪贴板里没有图片，请先截图或复制图片', true);
+    return;
+  }
+  const key = forcedKey || pickPasteTarget();
+  if (!key) { notify('当前模板没有可用的截图位置', true); return; }
+  e.preventDefault();
+  setSlotFile(key, f);
+}
+async function pasteFromClipboardApi() {
+  if (!navigator.clipboard || typeof navigator.clipboard.read !== 'function') {
+    notify('这个浏览器不支持读取剪贴板，请点截图框后按 Ctrl+V', true);
+    return;
+  }
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const type = item.types.find((t) => /^image\//.test(t));
+      if (type) {
+        const blob = await item.getType(type);
+        const key = pickPasteTarget();
+        if (!key) { notify('当前模板没有可用的截图位置', true); return; }
+        await setSlotFile(key, new File([blob], 'clipboard.' + (type.split('/')[1] || 'png'), { type }));
+        if (typeof toast === 'function') toast('已从剪贴板粘贴截图');
+        return;
+      }
+    }
+    notify('剪贴板里没有图片，请先截图或复制图片', true);
+  } catch (err) {
+    notify(err && err.name === 'NotAllowedError' ? '没有剪贴板权限：请在地址栏允许，或点截图框后按 Ctrl+V' : '读取剪贴板失败，请点截图框后按 Ctrl+V', true);
+  }
 }
 function bindPasteSlots() {
   Object.keys(SLOTS).forEach((key) => {
@@ -349,7 +410,10 @@ function bindPasteSlots() {
     if (inp) inp.addEventListener('change', (e) => setSlotFile(key, e.target.files && e.target.files[0]));
     const z = zoneOf(key);
     if (!z) return;
-    z.addEventListener('focus', () => { lastFocusedSlot = key; });
+    z.addEventListener('focus', () => { lastFocusedSlot = key; z.classList.add('focus'); });
+    z.addEventListener('blur', () => z.classList.remove('focus'));
+    z.addEventListener('mousedown', (e) => { if (!e.target.closest('.pz-remove')) { e.preventDefault(); z.focus(); } });
+    z.addEventListener('paste', (e) => handlePaste(e, key));
     z.addEventListener('click', (e) => {
       if (e.target.closest('.pz-remove')) { e.stopPropagation(); clearSlot(key); return; }
       z.focus();
@@ -363,7 +427,7 @@ function bindPasteSlots() {
     z.addEventListener('drop', (e) => {
       e.preventDefault();
       z.classList.remove('drag');
-      const f = [...((e.dataTransfer && e.dataTransfer.files) || [])].find((x) => /^image\//.test(x.type));
+      const f = [...((e.dataTransfer && e.dataTransfer.files) || [])].map(asImageFile).find(Boolean);
       if (f) setSlotFile(key, f); else setOcrStatus('请拖入图片文件', true);
     });
     renderSlot(key);
@@ -371,15 +435,8 @@ function bindPasteSlots() {
   // stop the browser from opening images dropped outside the zones
   window.addEventListener('dragover', (e) => { if (!e.target.closest || !e.target.closest('.paste-zone')) e.preventDefault(); });
   window.addEventListener('drop', (e) => { if (!e.target.closest || !e.target.closest('.paste-zone')) e.preventDefault(); });
-  document.addEventListener('paste', (e) => {
-    if (isTextTarget(document.activeElement)) return; // don't hijack text fields
-    const f = imageFromClipboard(e);
-    if (!f) return;
-    const key = pickPasteTarget();
-    if (!key) return;
-    e.preventDefault();
-    setSlotFile(key, f);
-  });
+  document.addEventListener('paste', (e) => handlePaste(e), true); // capture phase
+  document.getElementById('btn-ocr-clip')?.addEventListener('click', pasteFromClipboardApi);
 }
 window.addEventListener('template-changed', () => setTimeout(() => {
   // clear hidden slots so a hidden image is never sent (after labels/visibility update)

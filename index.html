@@ -410,6 +410,26 @@
   input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .55; border-radius: 6px; padding: 2px; }
   input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: .9; background: rgba(0,0,0,.05); }
 
+
+  .paste-zone {
+    position: relative; border: 1.5px dashed rgba(0,0,0,.14); border-radius: 12px;
+    background: #fff; min-height: 76px; margin-bottom: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    transition: border-color .15s, background .15s, box-shadow .15s; outline: none;
+  }
+  .paste-zone:hover { border-color: rgba(0,113,227,.4); }
+  .paste-zone:focus, .paste-zone.focus { border-color: rgba(0,113,227,.6); box-shadow: 0 0 0 4px rgba(0,113,227,.12); }
+  .paste-zone.drag { border-color: #0071e3; background: rgba(0,113,227,.06); }
+  .pz-empty { font-size: 12px; font-weight: 600; color: var(--secondary); padding: 14px; line-height: 1.5; }
+  .pz-thumb { position: relative; padding: 8px; }
+  .pz-thumb img { display: block; max-width: 100%; max-height: 140px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .pz-remove {
+    position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; border-radius: 50%;
+    border: none; background: rgba(29,29,31,.78); color: #fff; font-size: 15px; line-height: 24px;
+    cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .pz-remove:hover { background: #ff3b30; }
+
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -518,11 +538,19 @@
         <div class="ocr-upload-row">
           <div class="ocr-file-box">
             <div class="file-title">A · 优先岗位截图（招聘进度表）</div>
+            <div class="paste-zone" tabindex="0" role="button" data-slot="a" aria-label="粘贴或拖入截图">
+              <div class="pz-empty">点这里后 Ctrl+V 粘贴截图，或拖入图片</div>
+              <div class="pz-thumb" hidden><img alt="截图预览"><button type="button" class="pz-remove" title="移除" aria-label="移除截图">×</button></div>
+            </div>
             <input type="file" id="ocr-roles-file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp">
             <div class="ocr-file-hint" id="ocr-roles-hint">未选择</div>
           </div>
           <div class="ocr-file-box">
             <div class="file-title">B · 今日面试跟进截图</div>
+            <div class="paste-zone" tabindex="0" role="button" data-slot="b" aria-label="粘贴或拖入截图">
+              <div class="pz-empty">点这里后 Ctrl+V 粘贴截图，或拖入图片</div>
+              <div class="pz-thumb" hidden><img alt="截图预览"><button type="button" class="pz-remove" title="移除" aria-label="移除截图">×</button></div>
+            </div>
             <input type="file" id="ocr-iv-file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp">
             <div class="ocr-file-hint" id="ocr-iv-hint">未选择</div>
           </div>
@@ -541,7 +569,7 @@
           </div>
         </div>
         <div class="section-actions" style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-undo" hidden>撤销上次识图</button></div>
-        <p class="hint-tip">识别结果只写入点「识别」时所选的客户。可只传一张或两张一起识别。识别后请核对 JSON，再点确认写入左侧表单。</p>
+        <p class="hint-tip">识别结果只写入点「识别」时所选的客户。可点框后 Ctrl/⌘+V 粘贴、拖入图片或选文件；可只传一张或两张一起识别。识别后请核对 JSON，再点确认写入左侧表单。</p>
       </div>
 
 

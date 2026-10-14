@@ -274,14 +274,127 @@ function applyPendingToForm() {
   window.BoardApp.setStatus(msg);
 }
 
+
+// ---- 截图槽：文件选择 / 粘贴 / 拖入 ----
+const SLOTS = {
+  a: { input: 'ocr-roles-file', get: () => uploadedRolesDataUrl, set: (v) => { uploadedRolesDataUrl = v; }, msg: '已添加截图 A' },
+  b: { input: 'ocr-iv-file', get: () => uploadedIvDataUrl, set: (v) => { uploadedIvDataUrl = v; }, msg: '已添加截图 B' }
+};
+let lastFocusedSlot = null;
+const pendingSlots = new Set();
+function zoneOf(key) { return document.querySelector(`.paste-zone[data-slot="${key}"]`); }
+function slotVisible(key) { const z = zoneOf(key); return !!z && !z.closest('.ocr-file-box')?.hidden; }
+function renderSlot(key) {
+  const z = zoneOf(key);
+  if (!z) return;
+  const url = SLOTS[key].get();
+  z.querySelector('.pz-empty').hidden = !!url;
+  const th = z.querySelector('.pz-thumb');
+  th.hidden = !url;
+  const img = th.querySelector('img');
+  if (url) img.src = url; else img.removeAttribute('src');
+}
+async function setSlotFile(key, file) {
+  const slot = SLOTS[key];
+  if (!slot) return;
+  if (file && !/^image\//.test(file.type || '')) { setOcrStatus('只支持图片（PNG / JPG / WebP / GIF）', true); return; }
+  if (file) pendingSlots.add(key);
+  try {
+    slot.set(file ? await fileToDataUrl(file) : null);
+    setOcrStatus(file ? slot.msg : '');
+  } catch (err) {
+    slot.set(null);
+    setOcrStatus(err.message || '读取失败', true);
+  } finally {
+    pendingSlots.delete(key);
+  }
+  renderSlot(key);
+  updateFileHints();
+}
+function clearSlot(key) {
+  SLOTS[key].set(null);
+  const inp = document.getElementById(SLOTS[key].input);
+  if (inp) inp.value = '';
+  renderSlot(key);
+  updateFileHints();
+  setOcrStatus('已移除截图');
+}
+function isTextTarget(el) {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  if (el.tagName === 'TEXTAREA') return true;
+  if (el.tagName === 'INPUT') return !['file', 'checkbox', 'radio', 'button', 'submit'].includes((el.type || '').toLowerCase());
+  return false;
+}
+function pickPasteTarget() {
+  const active = document.activeElement;
+  const z = active && active.closest && active.closest('.paste-zone');
+  if (z) return z.dataset.slot;
+  const keys = Object.keys(SLOTS).filter(slotVisible);
+  if (!keys.length) return null;
+  return keys.find((k) => !SLOTS[k].get() && !pendingSlots.has(k)) || (lastFocusedSlot && keys.includes(lastFocusedSlot) ? lastFocusedSlot : keys[0]);
+}
+function imageFromClipboard(e) {
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for (const it of items) {
+    if (it.kind === 'file' && /^image\//.test(it.type)) return it.getAsFile();
+  }
+  const files = (e.clipboardData && e.clipboardData.files) || [];
+  for (const f of files) if (/^image\//.test(f.type)) return f;
+  return null;
+}
+function bindPasteSlots() {
+  Object.keys(SLOTS).forEach((key) => {
+    const inp = document.getElementById(SLOTS[key].input);
+    if (inp) inp.addEventListener('change', (e) => setSlotFile(key, e.target.files && e.target.files[0]));
+    const z = zoneOf(key);
+    if (!z) return;
+    z.addEventListener('focus', () => { lastFocusedSlot = key; });
+    z.addEventListener('click', (e) => {
+      if (e.target.closest('.pz-remove')) { e.stopPropagation(); clearSlot(key); return; }
+      z.focus();
+    });
+    z.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp && inp.click(); }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && SLOTS[key].get()) { e.preventDefault(); clearSlot(key); }
+    });
+    ['dragenter', 'dragover'].forEach((t) => z.addEventListener(t, (e) => { e.preventDefault(); z.classList.add('drag'); }));
+    ['dragleave', 'dragend'].forEach((t) => z.addEventListener(t, () => z.classList.remove('drag')));
+    z.addEventListener('drop', (e) => {
+      e.preventDefault();
+      z.classList.remove('drag');
+      const f = [...((e.dataTransfer && e.dataTransfer.files) || [])].find((x) => /^image\//.test(x.type));
+      if (f) setSlotFile(key, f); else setOcrStatus('请拖入图片文件', true);
+    });
+    renderSlot(key);
+  });
+  // stop the browser from opening images dropped outside the zones
+  window.addEventListener('dragover', (e) => { if (!e.target.closest || !e.target.closest('.paste-zone')) e.preventDefault(); });
+  window.addEventListener('drop', (e) => { if (!e.target.closest || !e.target.closest('.paste-zone')) e.preventDefault(); });
+  document.addEventListener('paste', (e) => {
+    if (isTextTarget(document.activeElement)) return; // don't hijack text fields
+    const f = imageFromClipboard(e);
+    if (!f) return;
+    const key = pickPasteTarget();
+    if (!key) return;
+    e.preventDefault();
+    setSlotFile(key, f);
+  });
+}
+window.addEventListener('template-changed', () => setTimeout(() => {
+  // clear hidden slots so a hidden image is never sent (after labels/visibility update)
+  Object.keys(SLOTS).forEach((k) => { if (!slotVisible(k) && SLOTS[k].get()) { SLOTS[k].set(null); renderSlot(k); } });
+  updateFileHints();
+}, 0));
+
 function updateFileHints() {
   const rolesHint = document.getElementById('ocr-roles-hint');
   const ivHint = document.getElementById('ocr-iv-hint');
   if (rolesHint) {
-    rolesHint.textContent = uploadedRolesDataUrl ? '已选岗位截图' : '未选择';
+    rolesHint.textContent = uploadedRolesDataUrl ? '已添加' : '未选择';
   }
   if (ivHint) {
-    ivHint.textContent = uploadedIvDataUrl ? '已选面试截图' : '未选择';
+    ivHint.textContent = uploadedIvDataUrl ? '已添加' : '未选择';
   }
 }
 
@@ -397,40 +510,7 @@ function bindOcrUi() {
     setOcrStatus('已清除本机 Key');
   });
 
-  const rolesInput = document.getElementById('ocr-roles-file');
-  const ivInput = document.getElementById('ocr-iv-file');
-
-  if (rolesInput) {
-    rolesInput.addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      try {
-        uploadedRolesDataUrl = file ? await fileToDataUrl(file) : null;
-        updateFileHints();
-        setOcrStatus(file ? '已选岗位截图' : '');
-      } catch (err) {
-        uploadedRolesDataUrl = null;
-        updateFileHints();
-        setOcrStatus(err.message || '读取失败', true);
-        e.target.value = '';
-      }
-    });
-  }
-
-  if (ivInput) {
-    ivInput.addEventListener('change', async (e) => {
-      const file = e.target.files && e.target.files[0];
-      try {
-        uploadedIvDataUrl = file ? await fileToDataUrl(file) : null;
-        updateFileHints();
-        setOcrStatus(file ? '已选面试截图' : '');
-      } catch (err) {
-        uploadedIvDataUrl = null;
-        updateFileHints();
-        setOcrStatus(err.message || '读取失败', true);
-        e.target.value = '';
-      }
-    });
-  }
+  bindPasteSlots();
 
   const runBtn = document.getElementById('btn-ocr-run');
   if (runBtn) runBtn.addEventListener('click', onRecognize);

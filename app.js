@@ -77,6 +77,29 @@ const CLIENTS_KEY = 'recruit_board_clients_v1';
 const DEFAULT_CLIENT = '易方达';
 let clientStore = null; // { current, clients: { name: data } }
 
+
+// ---- 日期：内部存「YYYY年M月D日」，表单用原生日期选择器（YYYY-MM-DD）----
+function cnToISO(t) {
+  t = String(t || '').trim();
+  let m = t.match(/(\d{4})\s*[年\-\/.]\s*(\d{1,2})\s*[月\-\/.]\s*(\d{1,2})/);
+  let y, mo, d;
+  if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = t.match(/(\d{1,2})\s*月\s*(\d{1,2})/))) { y = new Date().getFullYear(); mo = +m[1]; d = +m[2]; }
+  else return '';
+  const dt = new Date(y, mo - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return '';
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function isoToCN(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${+m[1]}年${+m[2]}月${+m[3]}日` : '';
+}
+function normDate(t) {
+  const iso = cnToISO(t);
+  if (iso) return isoToCN(iso);
+  return String(t || '').trim() ? String(t).trim() : todayCN();
+}
+
 function todayCN() {
   const d = new Date();
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
@@ -321,7 +344,8 @@ function pushToBoard() {
 }
 
 function collectStateFromForm() {
-  const date = ($('#field-date') && $('#field-date').value.trim()) || '';
+  const dateEl = $('#field-date');
+  const date = dateEl ? (dateEl.value ? isoToCN(dateEl.value) : todayCN()) : (state.date || todayCN());
   const interviews = $$('#iv-editor .item-card').map((card) => ({
     name: (card.querySelector('[data-field="name"]')?.value || '').trim(),
     round: card.querySelector('[data-field="round"]')?.value || '一面',
@@ -544,7 +568,7 @@ function renderEditors() {
       ? cele.people.map(celeCardHTML).join('')
       : '<p class="editor-empty">暂无入职同学，打开开关后添加</p>';
   }
-  $('#field-date').value = state.date || '';
+  $('#field-date').value = cnToISO(state.date) || cnToISO(todayCN());
   $('#iv-count').textContent = String(state.interviews.length);
   $('#role-count').textContent = String(state.roles.length);
   const celeCount = $('#cele-count');
@@ -672,6 +696,8 @@ function setStatus(msg, isError) {
 
 function bindEvents() {
   $('#field-date').addEventListener('input', syncFromFormAndPreview);
+  $('#field-date').addEventListener('change', syncFromFormAndPreview);
+  $('#btn-date-today')?.addEventListener('click', () => { $('#field-date').value = cnToISO(todayCN()); syncFromFormAndPreview(); });
 
   $('#iv-editor').addEventListener('input', syncFromFormAndPreview);
   $('#iv-editor').addEventListener('change', syncFromFormAndPreview);
@@ -881,7 +907,7 @@ function getBoardState() {
 function mergeOcrInto(base, parsed, meta) {
   if (meta.templateType === 'demandTable') {
     const out = normalizeClientData(base);
-    if (parsed.date && String(parsed.date).trim()) out.date = String(parsed.date).trim();
+    if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
     const dm = normalizeDemand(parsed);
     out.demand = { demandCount: dm.demandCount, resumeTarget: dm.resumeTarget, rows: dm.rows };
     return out;
@@ -894,7 +920,7 @@ function mergeOcrInto(base, parsed, meta) {
     roles: Array.isArray(base.roles) ? base.roles.slice() : [],
     celebrate: normalizeCelebrate(base.celebrate) // OCR never touches celebrate
   };
-  if (parsed.date && String(parsed.date).trim()) out.date = String(parsed.date).trim();
+  if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
   if (meta.hasIv && Array.isArray(parsed.interviews)) {
     out.interviews = parsed.interviews.map((iv) => ({
       name: String(iv?.name || '').trim(),
@@ -973,7 +999,7 @@ function normalizeClientData(d) {
   return {
     templateType: BoardTemplates[d.templateType] ? d.templateType : 'cards',
     demand: normalizeDemand(d.demand),
-    date: d.date || '',
+    date: normDate(d.date),
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
     celebrate: normalizeCelebrate(d.celebrate),

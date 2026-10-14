@@ -397,6 +397,19 @@
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+
+  .date-row { display: flex; gap: 8px; align-items: center; }
+  input[type="date"] {
+    flex: 1; min-width: 0; appearance: none; -webkit-appearance: none;
+    border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 9px 12px;
+    font-size: 15px; font-weight: 600; font-family: inherit; letter-spacing: -0.01em;
+    color: var(--text); background: #fbfbfd; font-variant-numeric: tabular-nums;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+  }
+  input[type="date"]:focus { outline: none; background: #fff; border-color: rgba(0,113,227,.45); box-shadow: 0 0 0 4px rgba(0,113,227,.12); }
+  input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .55; border-radius: 6px; padding: 2px; }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: .9; background: rgba(0,0,0,.05); }
+
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -461,7 +474,10 @@
         <h2>日期</h2>
         <div class="field-row">
           <label for="field-date">看板日期</label>
-          <input type="text" id="field-date" placeholder="例如：2026年10月14日">
+          <div class="date-row">
+            <input type="date" id="field-date">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-date-today">今天</button>
+          </div>
         </div>
       </div>
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261014-1235">
+<link rel="stylesheet" href="board-shared.css?v=20261014-1245">
 <style>  .summary { background:#fff; border-radius:24px; box-shadow:var(--shadow); padding:22px 28px; margin-bottom:22px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
   .summary-title { font-size:30px; font-weight:700; letter-spacing:-0.02em; line-height:1.3; }
   .summary-stats { display:flex; gap:12px; flex-shrink:0; }
@@ -27,7 +27,8 @@
   .red { color:#ff3b30; font-weight:700; }
 
   /* 国信岗位卡：字号不小于易方达岗位卡，更深更粗 */
-  .roles { grid-template-columns: 1fr 1fr; gap: 18px; }
+  body:not(.landscape) .wrap { max-width: 1828px; }
+  body:not(.landscape) .roles { grid-template-columns: repeat(3, 1fr); gap: 18px; }
   .role { padding: 22px 24px 20px 20px; }
   .role .role-title { font-size: 36px; line-height: 1.3; }
   .role .role-team { font-size: 23px; font-weight: 700; margin-top: 6px; }
@@ -49,7 +50,16 @@
   body.landscape .header { flex-wrap: nowrap; gap: 32px; }
   body.landscape .header h1 { flex-shrink: 0; }
   body.landscape .header .summary { order: 0; flex: 1 1 auto; }
-  body.landscape .roles { grid-template-columns: repeat(5, 1fr); }
+  body.landscape .roles { grid-template-columns: repeat(4, 1fr); gap: 40px; }
+  body.landscape .role { padding: 30px 32px 28px 30px; }
+  body.landscape .skills { line-height: 1.65; margin-top: 16px; padding-top: 16px; }
+  body.landscape .chips { margin-top: 14px; gap: 10px; }
+  body.landscape .metas { margin-top: 16px; gap: 6px 28px; }
+  body.landscape .role .role-team { margin-top: 10px; }
+  body.landscape .header { margin-bottom: 36px; }
+  body.landscape .celebrate-block, body.landscape .interviews-block { margin-bottom: 40px; }
+  body.landscape .interviews { gap: 24px; }
+  body.landscape .section-head { margin-bottom: 16px; }
   body.landscape .chips { flex-wrap: nowrap; overflow: hidden; }
 </style>
 </head>
@@ -97,7 +107,7 @@
     </section>
     <footer>数据来自招聘需求表</footer>
   </div>
-<script src="board-shared.js?v=20261014-1235"></script>
+<script src="board-shared.js?v=20261014-1245"></script>
 <script>
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function rich(s){return esc(s).replace(/\*\*([\s\S]+?)\*\*/g,'<span class="red">$1</span>').replace(/\n/g,'<br>');}

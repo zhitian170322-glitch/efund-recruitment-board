@@ -123,7 +123,7 @@ const BoardTemplates = {
   guoxin: {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
-    boardWidth: 1400,
+    boardWidth: 1900,
     boardWidthLandscape: 3000,
     defaultOrientation: 'landscape',
     formSelector: '#form-guoxin',

@@ -233,15 +233,6 @@ function changeTemplateType(t) {
   window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: getClient() } }));
   setStatus(`模板已改为「${getTemplate(t).label}」`);
 }
-function restoreEfund() {
-  if (!confirm('把「易方达」恢复为内置的 10月14日 原内容？易方达当前的数据会被覆盖（其他客户不受影响）。')) return;
-  if (clientStore.current !== DEFAULT_CLIENT) { collectStateFromForm(); saveClientStore(); }
-  clientStore.clients[DEFAULT_CLIENT] = eFundDefault();
-  loadClient(DEFAULT_CLIENT);
-  updateUndoOcrButton();
-  window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: DEFAULT_CLIENT } }));
-  setStatus('易方达已恢复为 10月14日 原内容');
-}
 let currentBoardSrc = null;
 function applyTemplateView(type) {
   const tpl = getTemplate(type);
@@ -743,7 +734,6 @@ function bindEvents() {
   $('#btn-add-iv').addEventListener('click', addInterview);
   $('#btn-add-role').addEventListener('click', addRole);
   $('#btn-ocr-undo')?.addEventListener('click', undoLastOcr);
-  $('#btn-restore-efund')?.addEventListener('click', restoreEfund);
   $('#btn-save')?.addEventListener('click', saveNow);
   $('#btn-backup-all')?.addEventListener('click', backupAll);
   $('#btn-restore-backup')?.addEventListener('click', () => $('#restore-file').click());

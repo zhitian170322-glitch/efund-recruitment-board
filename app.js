@@ -339,11 +339,50 @@ function getBoardState() {
   return state;
 }
 
+
+function applyOcrResult(parsed, meta) {
+  meta = meta || {};
+  collectStateFromForm();
+  const hasRoles = !!meta.hasRoles;
+  const hasIv = !!meta.hasIv;
+  if (parsed.date && String(parsed.date).trim()) {
+    state.date = String(parsed.date).trim();
+  }
+  if (hasIv && Array.isArray(parsed.interviews)) {
+    state.interviews = parsed.interviews.map((iv) => ({
+      name: String(iv?.name || '').trim(),
+      round: iv?.round === '二面' ? '二面' : '一面',
+      when: String(iv?.when || '').trim()
+    }));
+  }
+  if (hasRoles && Array.isArray(parsed.roles)) {
+    state.roles = parsed.roles.map((r) => ({
+      title: String(r?.title || '').trim(),
+      team: String(r?.team || '').trim(),
+      note: String(r?.note || '').trim(),
+      progress: String(r?.progress || '').trim(),
+      featured: !!r?.featured
+    }));
+  }
+  // If meta flags missing (legacy), update whatever non-empty arrays present
+  if (!hasRoles && !hasIv) {
+    if (Array.isArray(parsed.interviews) && parsed.interviews.length) {
+      state.interviews = parsed.interviews;
+    }
+    if (Array.isArray(parsed.roles) && parsed.roles.length) {
+      state.roles = parsed.roles;
+    }
+  }
+  renderEditors();
+  pushToBoard();
+}
+
 window.BoardApp = {
   getState: getBoardState,
   pushToBoard,
   setStatus,
-  getIframe
+  getIframe,
+  applyOcrResult
 };
 
 document.addEventListener('DOMContentLoaded', () => {

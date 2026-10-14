@@ -1,5 +1,57 @@
 # 易方达招聘看板生成器
 
-打开本仓库的 GitHub Pages 网址即可使用：填表 → 预览 → 下载 PNG/JPG。
+本机 / 在线网页：填表或截图识别 → 实时预览 → 下载超清 PNG / JPG。
 
-若 Pages 尚未开启：仓库 Settings → Pages → Source 选 Deploy from a branch → Branch 选 `main` / `/ (root)` → Save。
+在线地址：https://zhitian170322-glitch.github.io/efund-recruitment-board/
+
+## 怎么打开
+
+**推荐（导出更稳）：**
+
+```bash
+cd recruitment-board-app
+python3 -m http.server 8765
+```
+
+浏览器打开：http://localhost:8765/
+
+也可直接双击打开 `index.html`。若预览空白或下载失败，请改用上面的本地服务（部分浏览器限制 `file://` 跨页截图）。
+
+## 怎么用
+
+1. 改「日期」
+2. （可选）在「DeepSeek 设置」填 API Key，上传「优先岗位」和/或「今日面试跟进」截图，点「识别并填入」，核对 JSON 后「确认填入」
+3. 在「今日面试跟进」里添加 / 删除 / 改姓名、轮次、时间
+4. 在「优先岗位」里添加 / 删除 / 改岗位信息；勾选「重点岗位」
+5. 右侧预览会自动更新；也可点「刷新预览」
+6. **下载超清PNG**：约 9000 宽（浏览器内存不够时会自动降到 2–3×）
+7. **下载JPG**：约 4000 宽，适合微信发送
+8. **导出JSON / 导入JSON**：备份或换电脑继续改
+
+## 截图识别（DeepSeek）
+
+- Key、Base URL、模型保存在本机 `localStorage`，请求由浏览器直连 DeepSeek（`/v1/chat/completions`，默认模型 `deepseek-flash`）
+- 勿在公共电脑保存 Key；可用「清除本机 Key」
+- 若浏览器报跨域失败：确认 Key 正确；若仍失败需加中转代理（当前版本未内置中转）
+
+## 文件说明
+
+| 文件 | 作用 |
+|------|------|
+| `index.html` | 表单 + 识图 + 预览 + 下载按钮 |
+| `board-template.html` | 看板样式与排版（与现有看板一致） |
+| `app.js` | 表单数据绑定 |
+| `ocr.js` | DeepSeek 识图与确认填入 |
+| `export.js` | 客户端导出 PNG / JPG |
+
+默认带 **2026年10月14日** 示例（林洽二面 + 8 个优先岗位）。
+
+## 超清说明
+
+浏览器里用 html-to-image 截图，优先按 5× 渲染。内存不足会自动降级。若需要稳定的真正 5× / Playwright 出图，可继续用仓库里原有的 `recruitment-dashboard.html` + 无头浏览器路径。
+
+## 注意
+
+- 需联网一次以加载导出库（jsDelivr CDN）；之后可离线改数据、预览。完全离线导出可把 `html-to-image` 下到本地再改 `index.html` 引用。
+- 识图需要联网调用 DeepSeek。
+- 不要在卡片上填需求人数；分区人数由系统自动统计。

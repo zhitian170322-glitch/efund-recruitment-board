@@ -667,7 +667,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261014-1300" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261014-1425" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -688,11 +688,21 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261014-1300";</script>
-  <script src="templates.js?v=20261014-1300"></script>
-  <script src="app.js?v=20261014-1300"></script>
-  <script src="ocr.js?v=20261014-1300"></script>
-  <script src="export.js?v=20261014-1300"></script>
+  <script>window.BUILD_VERSION = "20261014-1425";</script>
+  <script>
+    // 自动更新：index.html 可能被浏览器/Pages 缓存 10 分钟；发现新版本就刷新一次
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.v || j.v === window.BUILD_VERSION) return;
+      var k = 'board_reload_for_' + j.v;
+      if (sessionStorage.getItem(k)) return;
+      sessionStorage.setItem(k, '1');
+      var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
+    }).catch(function () {});
+  </script>
+  <script src="templates.js?v=20261014-1425"></script>
+  <script src="app.js?v=20261014-1425"></script>
+  <script src="ocr.js?v=20261014-1425"></script>
+  <script src="export.js?v=20261014-1425"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

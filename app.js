@@ -160,6 +160,7 @@ function renderClientPills() {
   ).join('') + '<button type="button" class="client-pill add" id="btn-pill-add" title="新增客户" aria-label="新增客户">+</button>';
 }
 function loadClient(name) {
+  setTimeout(updateSavedLabel, 0);
   clientStore.current = name;
   const d = clientStore.clients[name] || emptyClientData();
   state = structuredClone(normalizeClientData(d));
@@ -171,6 +172,7 @@ function loadClient(name) {
 }
 function switchClient(name) {
   collectStateFromForm();
+  dirty = false; // autosave persisted it
   saveClientStore();
   loadClient(name);
   updateUndoOcrButton();
@@ -504,6 +506,7 @@ function updateDemandAuto() {
   if ($('#dm-row-count')) $('#dm-row-count').textContent = String(d.rows.length);
 }
 function demandMutate(fn) {
+  markDirty();
   collectStateFromForm();
   fn(state.demand.rows);
   renderEditors();
@@ -569,6 +572,7 @@ function renderEditors() {
 }
 
 function syncFromFormAndPreview() {
+  markDirty();
   collectStateFromForm();
   $('#iv-count').textContent = String(state.interviews.length);
   $('#role-count').textContent = String(state.roles.length);
@@ -581,6 +585,7 @@ function syncFromFormAndPreview() {
 }
 
 function addInterview() {
+  markDirty();
   collectStateFromForm();
   state.interviews.push({ name: '', round: '一面', when: '' });
   renderEditors();
@@ -588,6 +593,7 @@ function addInterview() {
 }
 
 function addRole() {
+  markDirty();
   collectStateFromForm();
   state.roles.push({ title: '', team: '', note: '', progress: '', featured: false });
   renderEditors();
@@ -595,6 +601,7 @@ function addRole() {
 }
 
 function removeInterview(idx) {
+  markDirty();
   collectStateFromForm();
   state.interviews.splice(idx, 1);
   renderEditors();
@@ -602,6 +609,7 @@ function removeInterview(idx) {
 }
 
 function removeRole(idx) {
+  markDirty();
   collectStateFromForm();
   state.roles.splice(idx, 1);
   renderEditors();
@@ -609,6 +617,7 @@ function removeRole(idx) {
 }
 
 function addCelebratePerson() {
+  markDirty();
   collectStateFromForm();
   if (!state.celebrate) state.celebrate = defaultCelebrate();
   state.celebrate.enabled = true;
@@ -618,6 +627,7 @@ function addCelebratePerson() {
 }
 
 function removeCelebratePerson(idx) {
+  markDirty();
   collectStateFromForm();
   state.celebrate.people.splice(idx, 1);
   renderEditors();
@@ -734,6 +744,11 @@ function bindEvents() {
   $('#btn-add-role').addEventListener('click', addRole);
   $('#btn-ocr-undo')?.addEventListener('click', undoLastOcr);
   $('#btn-restore-efund')?.addEventListener('click', restoreEfund);
+  $('#btn-save')?.addEventListener('click', saveNow);
+  $('#btn-backup-all')?.addEventListener('click', backupAll);
+  $('#btn-restore-backup')?.addEventListener('click', () => $('#restore-file').click());
+  $('#restore-file')?.addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (f) restoreBackup(f); e.target.value = ''; });
+  document.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveNow(); } });
   $('#client-template')?.addEventListener('change', (e) => changeTemplateType(e.target.value));
   $('#client-dialog-form')?.addEventListener('submit', confirmAddClient);
   $('#btn-client-dialog-cancel')?.addEventListener('click', () => $('#client-dialog').close());
@@ -786,6 +801,86 @@ function bindEvents() {
     pushToBoard();
   });
 }
+
+
+// ---- 显式保存 / 备份 ----
+let dirty = false;
+function markDirty() { dirty = true; updateSavedLabel(); }
+function hhmm(ts) { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function updateSavedLabel() {
+  const el = $('#saved-at');
+  if (!el || !clientStore) return;
+  const t = clientStore.clients[clientStore.current]?.savedAt;
+  el.textContent = (t ? `上次保存 ${hhmm(t)}` : '尚未手动保存') + (dirty ? ' · 有未保存的修改' : '');
+  el.classList.toggle('dirty', dirty);
+}
+function toast(msg) {
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 1800);
+}
+function saveNow() {
+  collectStateFromForm();
+  state.savedAt = Date.now();
+  saveClientStore();
+  dirty = false;
+  updateSavedLabel();
+  toast(`已保存 · ${hhmm(state.savedAt)}`);
+}
+function backupAll() {
+  collectStateFromForm();
+  saveClientStore();
+  const clients = {};
+  for (const [k, v] of Object.entries(clientStore.clients)) clients[k] = normalizeClientData(v);
+  const payload = { app: 'recruit-board', version: 1, exportedAt: new Date().toISOString(), current: clientStore.current, clients };
+  // API key lives in a separate localStorage entry and is never included here
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const d = new Date();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `招聘看板备份-全部客户-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${hhmm(d).replace(':', '')}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`已备份 ${Object.keys(clients).length} 个客户`);
+}
+function restoreBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(reader.result); } catch (e) { setStatus('恢复失败：不是有效的 JSON', true); return; }
+    if (!data || data.app !== 'recruit-board' || !data.clients || typeof data.clients !== 'object' || !Object.keys(data.clients).length) {
+      setStatus('恢复失败：这不是「备份全部客户」导出的文件', true);
+      return;
+    }
+    const mode = $('#restore-mode')?.value === 'replace' ? 'replace' : 'merge';
+    const names = Object.keys(data.clients);
+    const msg = mode === 'replace'
+      ? `完全替换：删除本机现有全部客户，换成备份里的 ${names.length} 个客户（${names.join('、')}）。确定？`
+      : `合并：备份里的 ${names.length} 个客户（${names.join('、')}）会覆盖本机同名客户，其他客户保留。确定？`;
+    if (!confirm(msg)) return;
+    collectStateFromForm();
+    saveClientStore();
+    const incoming = {};
+    for (const [k, v] of Object.entries(data.clients)) { if (String(k).trim()) incoming[String(k).trim()] = normalizeClientData(v); }
+    clientStore.clients = mode === 'replace' ? incoming : { ...clientStore.clients, ...incoming };
+    const target = (data.current && clientStore.clients[data.current]) ? data.current : Object.keys(clientStore.clients)[0];
+    localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
+    dirty = false;
+    loadClient(target);
+    updateUndoOcrButton();
+    window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: target } }));
+    toast(mode === 'replace' ? `已替换为备份（${names.length} 个客户）` : `已合并备份（${names.length} 个客户）`);
+  };
+  reader.readAsText(file);
+}
+window.addEventListener('beforeunload', (e) => {
+  if (!dirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 function getBoardState() {
   collectStateFromForm();
@@ -891,7 +986,8 @@ function normalizeClientData(d) {
     date: d.date || '',
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
-    celebrate: normalizeCelebrate(d.celebrate)
+    celebrate: normalizeCelebrate(d.celebrate),
+    savedAt: typeof d.savedAt === 'number' ? d.savedAt : null
   };
 }
 

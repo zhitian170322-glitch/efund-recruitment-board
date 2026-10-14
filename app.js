@@ -266,6 +266,7 @@ function applyTemplateView(type) {
   const sel = $('#client-template');
   if (sel) sel.innerHTML = templateOptionsHTML(type);
   window.currentBoardWidth = tpl.boardWidth;
+  if ($('#gx-iv-toggle')) $('#gx-iv-toggle').hidden = type !== 'guoxin';
   const iframe = getIframe();
   const src = tpl.boardSrc + (window.BUILD_VERSION ? `?v=${window.BUILD_VERSION}` : '');
   if (iframe && currentBoardSrc !== src) {
@@ -526,7 +527,7 @@ function collectGuoxinFromForm() {
       })
     };
   });
-  return normalizeGuoxin({ title: $('#gx-title')?.value ?? '', groups });
+  return normalizeGuoxin({ title: $('#gx-title')?.value ?? '', showInterviews: $('#gx-show-iv') ? $('#gx-show-iv').checked : true, groups });
 }
 function renderGuoxinEditor() {
   const ed = $('#gx-editor');
@@ -534,6 +535,7 @@ function renderGuoxinEditor() {
   const g = normalizeGuoxin(state.guoxin);
   state.guoxin = g;
   $('#gx-title').value = g.title;
+  if ($('#gx-show-iv')) $('#gx-show-iv').checked = g.showInterviews !== false;
   ed.innerHTML = g.groups.length ? g.groups.map((x, i) => gxGroupHTML(x, i, g.groups.length)).join('')
     : '<p class="editor-empty">暂无岗位，点击下方「添加岗位组」，或用截图识别 / 载入示例</p>';
   updateGuoxinCount();
@@ -809,6 +811,7 @@ function bindEvents() {
   $('#btn-gx-red')?.addEventListener('mousedown', (e) => e.preventDefault()); // keep selection
   $('#btn-gx-red')?.addEventListener('click', markRedSelection);
   $('#gx-title')?.addEventListener('input', syncFromFormAndPreview);
+  $('#gx-show-iv')?.addEventListener('change', syncFromFormAndPreview);
   $('#gx-title')?.addEventListener('focus', (e) => { lastRichField = e.target; });
   const gxEd = $('#gx-editor');
   if (gxEd) {

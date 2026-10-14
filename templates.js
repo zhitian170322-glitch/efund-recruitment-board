@@ -59,6 +59,7 @@ function normalizeGuoxin(g) {
   const T = (v) => S(v).trim();
   return {
     title: typeof g.title === 'string' ? g.title : '当日需求重点(活跃岗位)-重点看“紧急状态”',
+    showInterviews: g.showInterviews !== false,
     groups: Array.isArray(g.groups) ? g.groups.map((x) => ({
       team: T(x?.team), role: T(x?.role), roleNote: T(x?.roleNote), highlight: x?.highlight !== false,
       target: T(x?.target), salary: T(x?.salary), years: T(x?.years),
@@ -121,7 +122,7 @@ const BoardTemplates = {
   guoxin: {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
-    boardWidth: 2000,
+    boardWidth: 1672,
     formSelector: '#form-guoxin',
     ocrUploads: { a: '国信需求表截图', b: null },
     sample() { return structuredClone(GUOXIN_SAMPLE); },

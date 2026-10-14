@@ -393,7 +393,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="btn-client-rename">重命名</button>
           <button type="button" class="btn btn-danger btn-sm" id="btn-client-delete">删除</button>
         </div>
-        <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。</p>
+        <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。数据被误改可「撤销上次识图」，或 <a href="#" id="btn-load-sample" style="color:var(--link)">载入10月14日示例</a>（需确认）后手动修改。</p>
       </div>
 
       <div class="panel-section">
@@ -456,13 +456,15 @@
         <div id="ocr-status"></div>
         <div id="ocr-preview" hidden>
           <h3>识别结果预览（确认后再写入表单）</h3>
+          <div class="hint-tip" id="ocr-target" style="margin:0 0 8px;font-weight:700;color:#1d1d1f"></div>
           <pre id="ocr-preview-json"></pre>
           <div class="ocr-preview-actions">
             <button type="button" class="btn btn-ok btn-sm" id="btn-ocr-confirm">确认填入</button>
             <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-cancel">取消</button>
           </div>
         </div>
-        <p class="hint-tip">可只传一张或两张一起识别。识别后请核对 JSON，再点确认写入左侧表单。</p>
+        <div class="section-actions" style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-undo" hidden>撤销上次识图</button></div>
+        <p class="hint-tip">识别结果只写入点「识别」时所选的客户。可只传一张或两张一起识别。识别后请核对 JSON，再点确认写入左侧表单。</p>
       </div>
 
 

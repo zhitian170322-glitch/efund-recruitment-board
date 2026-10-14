@@ -123,6 +123,7 @@ function loadClientStore() {
   return { current: DEFAULT_CLIENT, clients: { [DEFAULT_CLIENT]: structuredClone(DEFAULT_DATA) } };
 }
 function saveClientStore() {
+  if (!clientStore || !clientStore.clients[clientStore.current]) return;
   try {
     clientStore.clients[clientStore.current] = {
       date: state.date || '',
@@ -162,6 +163,8 @@ function switchClient(name) {
   collectStateFromForm();
   saveClientStore();
   loadClient(name);
+  updateUndoOcrButton();
+  window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: name } }));
   setStatus(`已切换到「${name}」`);
 }
 function askClientName(msg, def) {
@@ -191,6 +194,9 @@ function renameClient() {
   saveClientStore();
   renderClientSelect();
   pushToBoard();
+  try { const b = JSON.parse(localStorage.getItem(OCR_BACKUP_KEY) || 'null'); if (b && b.client === old) { b.client = n; localStorage.setItem(OCR_BACKUP_KEY, JSON.stringify(b)); } } catch (e) { /* ignore */ }
+  window.dispatchEvent(new CustomEvent('client-renamed', { detail: { from: old, to: n } }));
+  updateUndoOcrButton();
   setStatus(`已重命名为「${n}」`);
 }
 function deleteClient() {
@@ -570,6 +576,8 @@ function bindEvents() {
   $('#btn-client-delete').addEventListener('click', deleteClient);
   $('#btn-add-iv').addEventListener('click', addInterview);
   $('#btn-add-role').addEventListener('click', addRole);
+  $('#btn-ocr-undo')?.addEventListener('click', undoLastOcr);
+  $('#btn-load-sample')?.addEventListener('click', (e) => { e.preventDefault(); loadSampleIntoCurrent(); });
   const addCele = $('#btn-add-cele');
   if (addCele) addCele.addEventListener('click', addCelebratePerson);
   $('#btn-refresh').addEventListener('click', () => {
@@ -604,23 +612,23 @@ function getBoardState() {
 }
 
 
-function applyOcrResult(parsed, meta) {
-  meta = meta || {};
-  collectStateFromForm();
-  const hasRoles = !!meta.hasRoles;
-  const hasIv = !!meta.hasIv;
-  if (parsed.date && String(parsed.date).trim()) {
-    state.date = String(parsed.date).trim();
-  }
-  if (hasIv && Array.isArray(parsed.interviews)) {
-    state.interviews = parsed.interviews.map((iv) => ({
+function mergeOcrInto(base, parsed, meta) {
+  const out = {
+    date: base.date || '',
+    interviews: Array.isArray(base.interviews) ? base.interviews.slice() : [],
+    roles: Array.isArray(base.roles) ? base.roles.slice() : [],
+    celebrate: normalizeCelebrate(base.celebrate) // OCR never touches celebrate
+  };
+  if (parsed.date && String(parsed.date).trim()) out.date = String(parsed.date).trim();
+  if (meta.hasIv && Array.isArray(parsed.interviews)) {
+    out.interviews = parsed.interviews.map((iv) => ({
       name: String(iv?.name || '').trim(),
       round: iv?.round === '二面' ? '二面' : '一面',
       when: String(iv?.when || '').trim()
     }));
   }
-  if (hasRoles && Array.isArray(parsed.roles)) {
-    state.roles = parsed.roles.map((r) => ({
+  if (meta.hasRoles && Array.isArray(parsed.roles)) {
+    out.roles = parsed.roles.map((r) => ({
       title: String(r?.title || '').trim(),
       team: String(r?.team || '').trim(),
       note: String(r?.note || '').trim(),
@@ -628,17 +636,78 @@ function applyOcrResult(parsed, meta) {
       featured: !!r?.featured
     }));
   }
-  // If meta flags missing (legacy), update whatever non-empty arrays present
-  if (!hasRoles && !hasIv) {
-    if (Array.isArray(parsed.interviews) && parsed.interviews.length) {
-      state.interviews = parsed.interviews;
-    }
-    if (Array.isArray(parsed.roles) && parsed.roles.length) {
-      state.roles = parsed.roles;
-    }
+  return out;
+}
+
+const OCR_BACKUP_KEY = 'recruit_board_ocr_backup_v1';
+
+// Writes OCR result ONLY to targetClient (the client active when recognition started).
+// Returns { ok, client, reason }.
+function applyOcrResult(parsed, meta) {
+  meta = meta || {};
+  const target = meta.client;
+  if (!target || !clientStore.clients[target]) {
+    return { ok: false, reason: 'gone', client: target };
   }
+  if (target === clientStore.current) {
+    collectStateFromForm();
+    saveClientStore();
+  }
+  const before = structuredClone(clientStore.clients[target]);
+  try { localStorage.setItem(OCR_BACKUP_KEY, JSON.stringify({ client: target, data: before, at: Date.now() })); } catch (e) { /* ignore */ }
+  const merged = mergeOcrInto(before, parsed, meta);
+  clientStore.clients[target] = merged;
+  if (target === clientStore.current) {
+    state = structuredClone(merged);
+    renderEditors();
+    pushToBoard();
+  }
+  localStorage.setItem(CLIENTS_KEY, JSON.stringify(clientStore));
+  updateUndoOcrButton();
+  return { ok: true, client: target, current: target === clientStore.current };
+}
+
+function updateUndoOcrButton() {
+  const btn = $('#btn-ocr-undo');
+  if (!btn) return;
+  let b = null;
+  try { b = JSON.parse(localStorage.getItem(OCR_BACKUP_KEY) || 'null'); } catch (e) { b = null; }
+  const ok = b && b.client && clientStore.clients[b.client];
+  btn.hidden = !ok;
+  if (ok) btn.textContent = `撤销上次识图（恢复「${b.client}」识图前数据）`;
+}
+
+function undoLastOcr() {
+  let b = null;
+  try { b = JSON.parse(localStorage.getItem(OCR_BACKUP_KEY) || 'null'); } catch (e) { b = null; }
+  if (!b || !clientStore.clients[b.client]) return;
+  if (!confirm(`把「${b.client}」恢复到上次识图之前的数据？`)) return;
+  if (clientStore.current !== b.client) { collectStateFromForm(); saveClientStore(); }
+  clientStore.clients[b.client] = normalizeClientData(b.data);
+  localStorage.removeItem(OCR_BACKUP_KEY);
+  loadClient(b.client);
+  updateUndoOcrButton();
+  setStatus(`已恢复「${b.client}」识图前数据`);
+}
+
+function normalizeClientData(d) {
+  d = d || {};
+  return {
+    date: d.date || '',
+    interviews: Array.isArray(d.interviews) ? d.interviews : [],
+    roles: Array.isArray(d.roles) ? d.roles : [],
+    celebrate: normalizeCelebrate(d.celebrate)
+  };
+}
+
+// Manual repair for polluted data: reload the built-in Oct 14 sample into the CURRENT client (confirm, never automatic)
+function loadSampleIntoCurrent() {
+  const c = getClient();
+  if (!confirm(`用内置的 10月14日 示例数据覆盖「${c}」当前内容？（可先导出 JSON 备份）`)) return;
+  state = structuredClone(DEFAULT_DATA);
   renderEditors();
   pushToBoard();
+  setStatus(`「${c}」已载入示例数据`);
 }
 
 window.BoardApp = {
@@ -647,13 +716,15 @@ window.BoardApp = {
   setStatus,
   getIframe,
   applyOcrResult,
-  getClient
+  getClient,
+  hasClient: (n) => !!(clientStore && clientStore.clients[n])
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   clientStore = loadClientStore();
   bindEvents();
   loadClient(clientStore.current);
+  updateUndoOcrButton();
   // Initial push after short delay in case iframe loads first
   setTimeout(pushToBoard, 100);
 });

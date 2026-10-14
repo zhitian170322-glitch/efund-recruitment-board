@@ -10,6 +10,7 @@ const DEFAULT_OCR_SETTINGS = {
 };
 
 let pendingParsed = null;
+let pendingRunClient = null;
 let uploadedRolesDataUrl = null;
 let uploadedIvDataUrl = null;
 
@@ -190,8 +191,11 @@ function showPreview(parsed, meta) {
   const pre = document.getElementById('ocr-preview-json');
   if (!box || !pre) return;
   pre.textContent = JSON.stringify(parsed, null, 2);
+  const tgt = document.getElementById('ocr-target');
+  if (tgt) tgt.textContent = `将写入客户：「${meta.client}」`;
   box.hidden = false;
-  setOcrStatus('已识别，请核对后点「确认填入」');
+  const cur = window.BoardApp.getClient();
+  setOcrStatus(cur === meta.client ? '已识别，请核对后点「确认填入」' : `已识别，结果属于「${meta.client}」，确认后只写入该客户`);
 }
 
 function hidePreview() {
@@ -208,12 +212,16 @@ function applyPendingToForm() {
     return;
   }
   const { parsed, meta } = pendingParsed;
-  window.BoardApp.applyOcrResult(parsed, meta);
+  const res = window.BoardApp.applyOcrResult(parsed, meta);
   hidePreview();
-  setOcrStatus('已填入表单，可再微调');
-  if (window.BoardApp.setStatus) {
-    window.BoardApp.setStatus('识图结果已填入');
+  pendingRunClient = null;
+  if (!res || !res.ok) {
+    setOcrStatus(`客户「${meta.client}」已不存在，识别结果已丢弃`, true);
+    return;
   }
+  const msg = res.current ? `已填入「${res.client}」，可再微调` : `已写入「${res.client}」（当前显示的客户未改动）`;
+  setOcrStatus(msg);
+  window.BoardApp.setStatus(msg);
 }
 
 function updateFileHints() {
@@ -251,6 +259,7 @@ async function onRecognize() {
 
   const hasRoles = !!uploadedRolesDataUrl;
   const hasIv = !!uploadedIvDataUrl;
+  const startClient = window.BoardApp.getClient();
   const dataUrls = [];
   if (hasRoles) dataUrls.push(uploadedRolesDataUrl);
   if (hasIv) dataUrls.push(uploadedIvDataUrl);
@@ -258,7 +267,8 @@ async function onRecognize() {
   const btn = document.getElementById('btn-ocr-run');
   if (btn) btn.disabled = true;
   hidePreview();
-  setOcrStatus('正在识别，请稍候…');
+  pendingRunClient = startClient;
+  setOcrStatus(`正在识别（写入客户：${startClient}）…`);
 
   try {
     const parsed = await callDeepSeekVision({
@@ -269,7 +279,7 @@ async function onRecognize() {
       hasRoles,
       hasIv
     });
-    showPreview(parsed, { hasRoles, hasIv });
+    showPreview(parsed, { hasRoles, hasIv, client: pendingRunClient || startClient });
   } catch (err) {
     console.error(err);
     setOcrStatus(err.message || String(err), true);
@@ -383,5 +393,15 @@ function bindOcrUi() {
 
   updateFileHints();
 }
+
+window.addEventListener('client-renamed', (e) => {
+  const { from, to } = e.detail || {};
+  if (pendingParsed && pendingParsed.meta.client === from) {
+    pendingParsed.meta.client = to;
+    const tgt = document.getElementById('ocr-target');
+    if (tgt) tgt.textContent = `将写入客户：「${to}」`;
+  }
+  if (pendingRunClient === from) pendingRunClient = to;
+});
 
 document.addEventListener('DOMContentLoaded', bindOcrUi);

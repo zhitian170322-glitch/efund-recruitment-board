@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261014-1220">
+<link rel="stylesheet" href="board-shared.css?v=20261014-1235">
 <style>  .summary { background:#fff; border-radius:24px; box-shadow:var(--shadow); padding:22px 28px; margin-bottom:22px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
   .summary-title { font-size:30px; font-weight:700; letter-spacing:-0.02em; line-height:1.3; }
   .summary-stats { display:flex; gap:12px; flex-shrink:0; }
@@ -38,17 +38,19 @@
   .meta { font-size: 22px; color: #000; font-weight: 700; }
   .meta i { color: #6e6e73; }
 
-  /* 横屏 */
-  .wrap { max-width: none; width: 2928px; }
-  .header { align-items: center; gap: 32px; }
-  .header h1 { flex-shrink: 0; }
-  .header .summary { flex: 1; margin: 0; padding: 16px 28px; }
-  .roles { grid-template-columns: repeat(5, 1fr); gap: 18px; }
-  .interviews { grid-template-columns: repeat(6, 1fr) !important; }
-  .chips { flex-wrap: nowrap; overflow: hidden; }
+  /* 竖屏：2 列，汇总卡单独一行 */
+  .header { flex-wrap: wrap; align-items: center; }
+  .header .summary { order: 3; flex: 1 1 100%; margin: 0; padding: 16px 28px; }
+  .roles { grid-template-columns: 1fr 1fr; gap: 18px; }
   .chip { white-space: nowrap; }
   .metas { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 10px; }
   .metas .meta { margin-top: 0; }
+  /* 横屏：3000 宽，5 列，汇总卡并入标题行 */
+  body.landscape .header { flex-wrap: nowrap; gap: 32px; }
+  body.landscape .header h1 { flex-shrink: 0; }
+  body.landscape .header .summary { order: 0; flex: 1 1 auto; }
+  body.landscape .roles { grid-template-columns: repeat(5, 1fr); }
+  body.landscape .chips { flex-wrap: nowrap; overflow: hidden; }
 </style>
 </head>
 <body>
@@ -95,7 +97,7 @@
     </section>
     <footer>数据来自招聘需求表</footer>
   </div>
-<script src="board-shared.js?v=20261014-1220"></script>
+<script src="board-shared.js?v=20261014-1235"></script>
 <script>
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function rich(s){return esc(s).replace(/\*\*([\s\S]+?)\*\*/g,'<span class="red">$1</span>').replace(/\n/g,'<br>');}
@@ -115,6 +117,7 @@
     document.getElementById('sum-roles').textContent=groups.length;
     var tot=groups.reduce(function(a,x){return a+num(x.target);},0);
     document.getElementById('sum-target').textContent=Math.round(tot*10)/10;
+    BoardShared.applyOrientation(data);
     BoardShared.renderCelebrate(data);
     BoardShared.renderInterviews(BoardShared.filterInterviews(data));
     // cards: one per sub-row

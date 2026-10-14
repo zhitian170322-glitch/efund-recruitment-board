@@ -76,6 +76,7 @@
       }
 
   }
-  window.BoardShared = { esc: esc, renderInterviews: renderInterviews, renderCelebrate: renderCelebrate,
+  function applyOrientation(data) { document.body.classList.toggle('landscape', !!data && data.orientation === 'landscape'); }
+  window.BoardShared = { applyOrientation: applyOrientation, esc: esc, renderInterviews: renderInterviews, renderCelebrate: renderCelebrate,
     filterInterviews: function (data) { return (Array.isArray(data.interviews) ? data.interviews : []).filter(function (iv) { return iv && String(iv.name || '').trim(); }); } };
 })();

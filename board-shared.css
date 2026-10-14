@@ -370,3 +370,8 @@
     letter-spacing: 0.02em;
     font-weight: 600;
   }
+
+  /* 横屏（每个客户可选）：宽画布 + 更多列 */
+  body.landscape .wrap { max-width: none; width: auto; }
+  body.landscape .interviews { grid-template-columns: repeat(6, 1fr) !important; }
+  body.landscape .roles { grid-template-columns: repeat(4, 1fr); }

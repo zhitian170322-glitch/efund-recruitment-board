@@ -438,6 +438,9 @@
   .gx-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .gx-row textarea { min-height: 44px; }
 
+  .seg { display: inline-flex; background: #e8e8ed; border-radius: 10px; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600; padding: 6px 18px; border-radius: 8px; cursor: pointer; color: #1d1d1f; }
+  .seg button.on { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -480,6 +483,13 @@
         <div class="field-row" style="margin-top:12px">
           <label for="client-template">模板类型（本客户）</label>
           <select id="client-template"></select>
+        </div>
+        <div class="field-row">
+          <label>看板方向（本客户）</label>
+          <div class="seg" id="orient-seg" role="group" aria-label="看板方向">
+            <button type="button" data-o="portrait">竖屏</button>
+            <button type="button" data-o="landscape">横屏</button>
+          </div>
         </div>
         <div class="save-row">
           <button type="button" class="btn btn-primary btn-sm" id="btn-save">保存</button>
@@ -657,7 +667,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261014-1220" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261014-1235" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -678,11 +688,11 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261014-1220";</script>
-  <script src="templates.js?v=20261014-1220"></script>
-  <script src="app.js?v=20261014-1220"></script>
-  <script src="ocr.js?v=20261014-1220"></script>
-  <script src="export.js?v=20261014-1220"></script>
+  <script>window.BUILD_VERSION = "20261014-1235";</script>
+  <script src="templates.js?v=20261014-1235"></script>
+  <script src="app.js?v=20261014-1235"></script>
+  <script src="ocr.js?v=20261014-1235"></script>
+  <script src="export.js?v=20261014-1235"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

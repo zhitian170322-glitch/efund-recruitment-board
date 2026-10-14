@@ -251,6 +251,7 @@ function changeTemplateType(t) {
   }
   collectStateFromForm();
   state.templateType = t;
+  state.orientation = normOrientation(null, t);
   saveClientStore();
   loadClient(getClient());
   window.dispatchEvent(new CustomEvent('client-switched', { detail: { to: getClient() } }));
@@ -265,7 +266,8 @@ function applyTemplateView(type) {
   });
   const sel = $('#client-template');
   if (sel) sel.innerHTML = templateOptionsHTML(type);
-  window.currentBoardWidth = tpl.boardWidth;
+  window.currentBoardWidth = boardWidthFor(type, state.orientation);
+  renderOrientation();
   const iframe = getIframe();
   const src = tpl.boardSrc + (window.BUILD_VERSION ? `?v=${window.BUILD_VERSION}` : '');
   if (iframe && currentBoardSrc !== src) {
@@ -373,7 +375,7 @@ function collectStateFromForm() {
     people
   };
   const guoxin = collectGuoxinFromForm();
-  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, guoxin, savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
+  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, guoxin, orientation: normOrientation(state.orientation, state.templateType), savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
   return state;
 }
 
@@ -809,6 +811,7 @@ function bindEvents() {
   $('#btn-gx-red')?.addEventListener('mousedown', (e) => e.preventDefault()); // keep selection
   $('#btn-gx-red')?.addEventListener('click', markRedSelection);
   $('#gx-title')?.addEventListener('input', syncFromFormAndPreview);
+  $$('#orient-seg button').forEach((b) => b.addEventListener('click', () => setOrientation(b.dataset.o)));
   $('#gx-title')?.addEventListener('focus', (e) => { lastRichField = e.target; });
   const gxEd = $('#gx-editor');
   if (gxEd) {
@@ -1040,6 +1043,27 @@ function undoLastOcr() {
   setStatus(`已恢复「${b.client}」识图前数据`);
 }
 
+function normOrientation(o, type) {
+  if (o === 'portrait' || o === 'landscape') return o;
+  return (BoardTemplates[type] && BoardTemplates[type].defaultOrientation) || 'portrait';
+}
+function boardWidthFor(type, o) {
+  const tpl = getTemplate(type);
+  return normOrientation(o, type) === 'landscape' ? (tpl.boardWidthLandscape || tpl.boardWidth) : tpl.boardWidth;
+}
+function renderOrientation() {
+  const o = normOrientation(state.orientation, state.templateType);
+  $$('#orient-seg button').forEach((b) => { const on = b.dataset.o === o; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+}
+function setOrientation(o) {
+  if (o !== 'portrait' && o !== 'landscape') return;
+  collectStateFromForm();
+  state.orientation = o;
+  window.currentBoardWidth = boardWidthFor(state.templateType, o);
+  renderOrientation();
+  if (typeof window.fitPreview === 'function') window.fitPreview();
+  syncFromFormAndPreview();
+}
 function normalizeClientData(d) {
   d = d || {};
   let type = d.templateType;
@@ -1056,6 +1080,7 @@ function normalizeClientData(d) {
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
     celebrate: normalizeCelebrate(d.celebrate),
+    orientation: normOrientation(d.orientation, BoardTemplates[type] ? type : 'cards'),
     savedAt: typeof d.savedAt === 'number' ? d.savedAt : null
   };
   if (legacyDemand) out.legacyDemand = legacyDemand; // 原始需求表数据保留一份，不丢

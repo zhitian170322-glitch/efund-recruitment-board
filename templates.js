@@ -93,6 +93,8 @@ const BoardTemplates = {
     label: '易方达看板（面试 + 优先岗位）',
     boardSrc: 'board-template.html',
     boardWidth: 1400,
+    boardWidthLandscape: 2600,
+    defaultOrientation: 'portrait',
     formSelector: '#form-cards',
     ocrUploads: { a: 'A · 优先岗位截图（招聘进度表）', b: 'B · 今日面试跟进截图' },
     // sample/empty only cover template-specific parts; date is shared
@@ -121,7 +123,9 @@ const BoardTemplates = {
   guoxin: {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
-    boardWidth: 3000,
+    boardWidth: 1400,
+    boardWidthLandscape: 3000,
+    defaultOrientation: 'landscape',
     formSelector: '#form-guoxin',
     ocrUploads: { a: '国信需求表截图', b: null },
     sample() { return structuredClone(GUOXIN_SAMPLE); },

@@ -350,6 +350,12 @@
   }
 
 
+
+  .ocr-settings { padding: 12px 16px; }
+  .ocr-settings summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--secondary); list-style: none; }
+  .ocr-settings summary::-webkit-details-marker { display: none; }
+  .ocr-settings[open] summary { margin-bottom: 12px; color: var(--text); }
+
   .ai-settings { padding: 12px 16px; }
   .ai-settings summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--secondary); list-style: none; }
   .ai-settings summary::-webkit-details-marker { display: none; }
@@ -538,6 +544,48 @@
         <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。数据被误改可「撤销上次识图」，或 <a href="#" id="btn-load-sample" style="color:var(--link)">载入10月14日示例</a>（需确认）后手动修改。</p>
       </div>
 
+      <details class="panel-section ocr-settings" id="ocr-settings">
+        <summary>📷 截图识别填入</summary>
+        <div class="ocr-settings-body">
+        <div class="ocr-upload-row">
+          <div class="ocr-file-box">
+            <div class="file-title">A · 优先岗位截图（招聘进度表）</div>
+            <div class="paste-zone" tabindex="0" role="button" data-slot="a" aria-label="粘贴或拖入截图">
+              <div class="pz-empty">点这里后 Ctrl+V 粘贴截图，或拖入图片</div>
+              <div class="pz-thumb" hidden><img alt="截图预览"><button type="button" class="pz-remove" title="移除" aria-label="移除截图">×</button></div>
+            </div>
+            <input type="file" id="ocr-roles-file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp">
+            <div class="ocr-file-hint" id="ocr-roles-hint">未选择</div>
+          </div>
+          <div class="ocr-file-box">
+            <div class="file-title">B · 今日面试跟进截图</div>
+            <div class="paste-zone" tabindex="0" role="button" data-slot="b" aria-label="粘贴或拖入截图">
+              <div class="pz-empty">点这里后 Ctrl+V 粘贴截图，或拖入图片</div>
+              <div class="pz-thumb" hidden><img alt="截图预览"><button type="button" class="pz-remove" title="移除" aria-label="移除截图">×</button></div>
+            </div>
+            <input type="file" id="ocr-iv-file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp">
+            <div class="ocr-file-hint" id="ocr-iv-hint">未选择</div>
+          </div>
+        </div>
+        <div class="section-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-clip">从剪贴板粘贴</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-ocr-run">识别并填入</button>
+        </div>
+        <div id="ocr-status"></div>
+        <div id="ocr-preview" hidden>
+          <h3>识别结果预览（确认后再写入表单）</h3>
+          <div class="hint-tip" id="ocr-target" style="margin:0 0 8px;font-weight:700;color:#1d1d1f"></div>
+          <pre id="ocr-preview-json"></pre>
+          <div class="ocr-preview-actions">
+            <button type="button" class="btn btn-ok btn-sm" id="btn-ocr-confirm">确认填入</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-cancel">取消</button>
+          </div>
+        </div>
+        <div class="section-actions" style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-undo" hidden>撤销上次识图</button></div>
+        <p class="hint-tip">识别结果只写入点「识别」时所选的客户。可点框后 Ctrl/⌘+V 粘贴、拖入图片或选文件；可只传一张或两张一起识别。识别后请核对 JSON，再点确认写入左侧表单。</p>
+        </div>
+      </details>
+
       <div class="panel-section">
         <h2>日期</h2>
         <div class="field-row">
@@ -580,47 +628,6 @@
           <p class="settings-warn">Key 只存在本机浏览器，所有客户共用；勿在公共电脑保存。请求直接发往 DeepSeek。</p>
         </div>
       </details>
-
-      <div class="panel-section">
-        <h2>截图识别填入</h2>
-        <div class="ocr-upload-row">
-          <div class="ocr-file-box">
-            <div class="file-title">A · 优先岗位截图（招聘进度表）</div>
-            <div class="paste-zone" tabindex="0" role="button" data-slot="a" aria-label="粘贴或拖入截图">
-              <div class="pz-empty">点这里后 Ctrl+V 粘贴截图，或拖入图片</div>
-              <div class="pz-thumb" hidden><img alt="截图预览"><button type="button" class="pz-remove" title="移除" aria-label="移除截图">×</button></div>
-            </div>
-            <input type="file" id="ocr-roles-file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp">
-            <div class="ocr-file-hint" id="ocr-roles-hint">未选择</div>
-          </div>
-          <div class="ocr-file-box">
-            <div class="file-title">B · 今日面试跟进截图</div>
-            <div class="paste-zone" tabindex="0" role="button" data-slot="b" aria-label="粘贴或拖入截图">
-              <div class="pz-empty">点这里后 Ctrl+V 粘贴截图，或拖入图片</div>
-              <div class="pz-thumb" hidden><img alt="截图预览"><button type="button" class="pz-remove" title="移除" aria-label="移除截图">×</button></div>
-            </div>
-            <input type="file" id="ocr-iv-file" accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp">
-            <div class="ocr-file-hint" id="ocr-iv-hint">未选择</div>
-          </div>
-        </div>
-        <div class="section-actions">
-          <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-clip">从剪贴板粘贴</button>
-          <button type="button" class="btn btn-primary btn-sm" id="btn-ocr-run">识别并填入</button>
-        </div>
-        <div id="ocr-status"></div>
-        <div id="ocr-preview" hidden>
-          <h3>识别结果预览（确认后再写入表单）</h3>
-          <div class="hint-tip" id="ocr-target" style="margin:0 0 8px;font-weight:700;color:#1d1d1f"></div>
-          <pre id="ocr-preview-json"></pre>
-          <div class="ocr-preview-actions">
-            <button type="button" class="btn btn-ok btn-sm" id="btn-ocr-confirm">确认填入</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-cancel">取消</button>
-          </div>
-        </div>
-        <div class="section-actions" style="margin-top:8px"><button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-undo" hidden>撤销上次识图</button></div>
-        <p class="hint-tip">识别结果只写入点「识别」时所选的客户。可点框后 Ctrl/⌘+V 粘贴、拖入图片或选文件；可只传一张或两张一起识别。识别后请核对 JSON，再点确认写入左侧表单。</p>
-      </div>
-
 
       <div class="panel-section">
         <h2>入职庆祝 <span class="count"><span id="cele-count">0</span> 人</span></h2>
@@ -711,7 +718,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261016-1015" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261016-1020" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -732,7 +739,7 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261016-1015";</script>
+  <script>window.BUILD_VERSION = "20261016-1020";</script>
   <script>
     // 自动更新：index.html 可能被浏览器/Pages 缓存 10 分钟；发现新版本就刷新一次
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -743,10 +750,10 @@
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () {});
   </script>
-  <script src="templates.js?v=20261016-1015"></script>
-  <script src="app.js?v=20261016-1015"></script>
-  <script src="ocr.js?v=20261016-1015"></script>
-  <script src="export.js?v=20261016-1015"></script>
+  <script src="templates.js?v=20261016-1020"></script>
+  <script src="app.js?v=20261016-1020"></script>
+  <script src="ocr.js?v=20261016-1020"></script>
+  <script src="export.js?v=20261016-1020"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

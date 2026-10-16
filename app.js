@@ -828,6 +828,17 @@ function setStatus(msg, isError) {
   el.classList.toggle('ok', !isError && !!msg);
 }
 
+
+function initOcrPanelToggle() {
+  const det = document.getElementById('ocr-settings');
+  if (!det) return;
+  const KEY = 'recruit_board_ocr_panel_open';
+  try { det.open = localStorage.getItem(KEY) === '1'; } catch (e) { det.open = false; }
+  det.addEventListener('toggle', () => {
+    try { localStorage.setItem(KEY, det.open ? '1' : '0'); } catch (e) {}
+  });
+}
+
 function bindEvents() {
   $('#field-date').addEventListener('input', syncFromFormAndPreview);
   $('#field-date').addEventListener('change', syncFromFormAndPreview);
@@ -1237,6 +1248,7 @@ window.BoardApp = {
 document.addEventListener('DOMContentLoaded', () => {
   clientStore = loadClientStore();
   bindEvents();
+  initOcrPanelToggle();
   loadClient(clientStore.current);
   updateUndoOcrButton();
   // Initial push after short delay in case iframe loads first

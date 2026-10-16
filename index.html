@@ -550,6 +550,37 @@
         <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。数据被误改可「撤销上次识图」，或 <a href="#" id="btn-load-sample" style="color:var(--link)">载入10月14日示例</a>（需确认）后手动修改。</p>
       </div>
 
+      <details class="panel-section ai-settings" id="ai-settings">
+        <summary>⚙ AI识别设置</summary>
+        <div class="ai-settings-body">
+          <div id="key-saved-view" hidden>
+            <div class="key-saved">Key 已保存 ✓</div>
+            <div class="section-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-change-key">更换Key</button>
+              <button type="button" class="btn btn-danger btn-sm" id="btn-ocr-clear-key">清除Key</button>
+            </div>
+          </div>
+          <div id="key-input-view">
+            <div class="field-row">
+              <label for="ocr-api-key">DeepSeek API Key</label>
+              <input type="password" id="ocr-api-key" placeholder="粘贴 Key" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="section-actions">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-ocr-save-key">保存Key</button>
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:10px">
+            <label for="ocr-base-url">Base URL</label>
+            <input type="text" id="ocr-base-url" placeholder="https://api.deepseek.com">
+          </div>
+          <div class="field-row">
+            <label for="ocr-model">模型</label>
+            <input type="text" id="ocr-model" placeholder="deepseek-flash">
+          </div>
+          <p class="settings-warn">Key 只存在本机浏览器，所有客户共用；勿在公共电脑保存。请求直接发往 DeepSeek。</p>
+        </div>
+      </details>
+
       <details class="panel-section ocr-settings" id="ocr-settings">
         <summary>📷 截图识别填入</summary>
         <div class="ocr-settings-body">
@@ -603,37 +634,6 @@
         </div>
       </div>
 
-
-      <details class="panel-section ai-settings" id="ai-settings">
-        <summary>⚙ AI识别设置</summary>
-        <div class="ai-settings-body">
-          <div id="key-saved-view" hidden>
-            <div class="key-saved">Key 已保存 ✓</div>
-            <div class="section-actions">
-              <button type="button" class="btn btn-ghost btn-sm" id="btn-ocr-change-key">更换Key</button>
-              <button type="button" class="btn btn-danger btn-sm" id="btn-ocr-clear-key">清除Key</button>
-            </div>
-          </div>
-          <div id="key-input-view">
-            <div class="field-row">
-              <label for="ocr-api-key">DeepSeek API Key</label>
-              <input type="password" id="ocr-api-key" placeholder="粘贴 Key" autocomplete="off" spellcheck="false">
-            </div>
-            <div class="section-actions">
-              <button type="button" class="btn btn-primary btn-sm" id="btn-ocr-save-key">保存Key</button>
-            </div>
-          </div>
-          <div class="field-row" style="margin-top:10px">
-            <label for="ocr-base-url">Base URL</label>
-            <input type="text" id="ocr-base-url" placeholder="https://api.deepseek.com">
-          </div>
-          <div class="field-row">
-            <label for="ocr-model">模型</label>
-            <input type="text" id="ocr-model" placeholder="deepseek-flash">
-          </div>
-          <p class="settings-warn">Key 只存在本机浏览器，所有客户共用；勿在公共电脑保存。请求直接发往 DeepSeek。</p>
-        </div>
-      </details>
 
       <div class="panel-section">
         <h2>入职庆祝 <span class="count"><span id="cele-count">0</span> 人</span></h2>
@@ -724,7 +724,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261016-1025" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261016-1030" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -745,7 +745,7 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261016-1025";</script>
+  <script>window.BUILD_VERSION = "20261016-1030";</script>
   <script>
     // 自动更新：index.html 可能被浏览器/Pages 缓存 10 分钟；发现新版本就刷新一次
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -756,10 +756,10 @@
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () {});
   </script>
-  <script src="templates.js?v=20261016-1025"></script>
-  <script src="app.js?v=20261016-1025"></script>
-  <script src="ocr.js?v=20261016-1025"></script>
-  <script src="export.js?v=20261016-1025"></script>
+  <script src="templates.js?v=20261016-1030"></script>
+  <script src="app.js?v=20261016-1030"></script>
+  <script src="ocr.js?v=20261016-1030"></script>
+  <script src="export.js?v=20261016-1030"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

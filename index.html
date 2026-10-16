@@ -448,6 +448,12 @@
   .seg button { border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600; padding: 6px 18px; border-radius: 8px; cursor: pointer; color: #1d1d1f; }
   .seg button.on { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 
+
+  #role-editor .item-label,
+  #gx-editor .item-label {
+    color: #0071e3;
+  }
+
   /* 编辑器里岗位块之间的分割线（不影响看板预览） */
   #role-editor .item-card,
   #gx-editor .gx-group {
@@ -718,7 +724,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261016-1020" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261016-1025" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -739,7 +745,7 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261016-1020";</script>
+  <script>window.BUILD_VERSION = "20261016-1025";</script>
   <script>
     // 自动更新：index.html 可能被浏览器/Pages 缓存 10 分钟；发现新版本就刷新一次
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -750,10 +756,10 @@
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () {});
   </script>
-  <script src="templates.js?v=20261016-1020"></script>
-  <script src="app.js?v=20261016-1020"></script>
-  <script src="ocr.js?v=20261016-1020"></script>
-  <script src="export.js?v=20261016-1020"></script>
+  <script src="templates.js?v=20261016-1025"></script>
+  <script src="app.js?v=20261016-1025"></script>
+  <script src="ocr.js?v=20261016-1025"></script>
+  <script src="export.js?v=20261016-1025"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

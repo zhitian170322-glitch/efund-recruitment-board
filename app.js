@@ -69,7 +69,8 @@ const DEFAULT_DATA = {
     summary: '',
     cheer: '继续加油，再接再入！',
     people: []
-  }
+  },
+  pending: { enabled: false, people: [] }
 };
 
 
@@ -113,6 +114,25 @@ function defaultCelebrate() {
     people: []
   };
 }
+function defaultPending() {
+  return { enabled: false, people: [] };
+}
+function normalizePending(c) {
+  c = c && typeof c === 'object' ? c : {};
+  return {
+    enabled: !!c.enabled,
+    people: Array.isArray(c.people) ? c.people.map((p) => ({
+      name: String(p?.name || '').trim(),
+      title: String(p?.title || '').trim(),
+      date: (function () {
+        const raw = String(p?.date || '').trim();
+        const iso = cnToISO(raw) || (/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '');
+        return iso || raw;
+      })(),
+      follow: String(p?.follow || '').trim()
+    })) : []
+  };
+}
 function normalizeCelebrate(c) {
   c = c && typeof c === 'object' ? c : {};
   return {
@@ -132,7 +152,7 @@ function emptyClientData(templateType) {
   const t = BoardTemplates[templateType] ? templateType : 'cards';
   return {
     templateType: t,
-    date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate(),
+    date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate(), pending: defaultPending(),
     guoxin: normalizeGuoxin(t === 'guoxin' ? BoardTemplates.guoxin.empty() : null)
   };
 }
@@ -268,6 +288,7 @@ function applyTemplateView(type) {
   if (sel) sel.innerHTML = templateOptionsHTML(type);
   window.currentBoardWidth = boardWidthFor(type, state.orientation);
   renderOrientation();
+  if ($('#pending-section')) $('#pending-section').hidden = type !== 'cards';
   const iframe = getIframe();
   const src = tpl.boardSrc + (window.BUILD_VERSION ? `?v=${window.BUILD_VERSION}` : '');
   if (iframe && currentBoardSrc !== src) {
@@ -374,8 +395,18 @@ function collectStateFromForm() {
     cheer: ($('#cele-cheer')?.value || '').trim(),
     people
   };
+  const pendingPeople = $$('#pending-editor .item-card').map((card) => ({
+    name: (card.querySelector('[data-field="name"]')?.value || '').trim(),
+    title: (card.querySelector('[data-field="title"]')?.value || '').trim(),
+    date: (card.querySelector('[data-field="date"]')?.value || '').trim(),
+    follow: (card.querySelector('[data-field="follow"]')?.value || '').trim()
+  }));
+  const pending = normalizePending({
+    enabled: $('#pending-enabled') ? !!$('#pending-enabled').checked : !!(state.pending && state.pending.enabled),
+    people: $('#pending-editor') ? pendingPeople : (state.pending?.people || [])
+  });
   const guoxin = collectGuoxinFromForm();
-  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, guoxin, orientation: normOrientation(state.orientation, state.templateType), savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
+  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, pending, guoxin, orientation: normOrientation(state.orientation, state.templateType), savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
   return state;
 }
 
@@ -587,12 +618,46 @@ function escapeText(s) {
     .replace(/>/g, '&gt;');
 }
 
+function pendingCardHTML(p, idx) {
+  const iso = cnToISO(p.date) || (/^\d{4}-\d{2}-\d{2}$/.test(String(p.date || '')) ? p.date : '');
+  return `
+    <div class="item-card" data-idx="${idx}">
+      <div class="item-card-head">
+        <span class="item-label">待入职 #${idx + 1}</span>
+        <button type="button" class="btn btn-danger btn-sm" data-action="remove-pending">删除</button>
+      </div>
+      <div class="field-row two">
+        <div>
+          <label>姓名</label>
+          <input type="text" data-field="name" value="${escapeAttr(p.name || '')}" placeholder="待入职同学">
+        </div>
+        <div>
+          <label>岗位</label>
+          <input type="text" data-field="title" value="${escapeAttr(p.title || '')}" placeholder="例如：开发工程师">
+        </div>
+      </div>
+      <div class="field-row two">
+        <div>
+          <label>预计入职日期</label>
+          <input type="date" data-field="date" value="${escapeAttr(iso || '')}">
+        </div>
+        <div>
+          <label>跟进人</label>
+          <input type="text" data-field="follow" value="${escapeAttr(p.follow || '')}" placeholder="跟进人">
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderEditors() {
   const ivEditor = $('#iv-editor');
   const roleEditor = $('#role-editor');
   const celeEditor = $('#cele-editor');
   const cele = normalizeCelebrate(state.celebrate);
   state.celebrate = cele;
+  const pend = normalizePending(state.pending);
+  state.pending = pend;
+  const pendingEditor = $('#pending-editor');
   ivEditor.innerHTML = state.interviews.length
     ? state.interviews.map(ivCardHTML).join('')
     : '<p class="editor-empty">暂无面试，点击下方「添加面试」</p>';
@@ -603,6 +668,11 @@ function renderEditors() {
     celeEditor.innerHTML = cele.people.length
       ? cele.people.map(celeCardHTML).join('')
       : '<p class="editor-empty">暂无入职同学，打开开关后添加</p>';
+  }
+  if (pendingEditor) {
+    pendingEditor.innerHTML = pend.people.length
+      ? pend.people.map(pendingCardHTML).join('')
+      : '<p class="editor-empty">暂无待入职，打开开关后添加</p>';
   }
   $('#field-date').value = cnToISO(state.date) || cnToISO(todayCN());
   $('#iv-count').textContent = String(state.interviews.length);
@@ -619,6 +689,12 @@ function renderEditors() {
   if (cheer) cheer.value = cele.cheer || '';
   const body = $('#cele-body');
   if (body) body.hidden = !cele.enabled;
+  const pendCount = $('#pending-count');
+  if (pendCount) pendCount.textContent = String(pend.people.length);
+  const pendEn = $('#pending-enabled');
+  if (pendEn) pendEn.checked = !!pend.enabled;
+  const pendBody = $('#pending-body');
+  if (pendBody) pendBody.hidden = !pend.enabled;
   renderGuoxinEditor();
 }
 
@@ -631,6 +707,10 @@ function syncFromFormAndPreview() {
   if (celeCount) celeCount.textContent = String((state.celebrate?.people || []).length);
   const body = $('#cele-body');
   if (body) body.hidden = !state.celebrate?.enabled;
+  const pendCount = $('#pending-count');
+  if (pendCount) pendCount.textContent = String((state.pending?.people || []).length);
+  const pendBody = $('#pending-body');
+  if (pendBody) pendBody.hidden = !state.pending?.enabled;
   updateGuoxinCount();
   pushToBoard();
 }
@@ -681,6 +761,24 @@ function removeCelebratePerson(idx) {
   markDirty();
   collectStateFromForm();
   state.celebrate.people.splice(idx, 1);
+  renderEditors();
+  pushToBoard();
+}
+
+function addPendingPerson() {
+  markDirty();
+  collectStateFromForm();
+  if (!state.pending) state.pending = defaultPending();
+  state.pending.enabled = true;
+  state.pending.people.push({ name: '', title: '', date: '', follow: '' });
+  renderEditors();
+  pushToBoard();
+}
+
+function removePendingPerson(idx) {
+  markDirty();
+  collectStateFromForm();
+  state.pending.people.splice(idx, 1);
   renderEditors();
   pushToBoard();
 }
@@ -751,6 +849,25 @@ function bindEvents() {
       if (!Number.isNaN(idx)) removeCelebratePerson(idx);
     });
   }
+  const pendEd = $('#pending-editor');
+  if (pendEd) {
+    pendEd.addEventListener('input', syncFromFormAndPreview);
+    pendEd.addEventListener('change', syncFromFormAndPreview);
+    pendEd.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action="remove-pending"]');
+      if (!btn) return;
+      const card = btn.closest('.item-card');
+      const idx = Number(card?.dataset.idx);
+      if (!Number.isNaN(idx)) removePendingPerson(idx);
+    });
+  }
+  $('#pending-enabled')?.addEventListener('change', () => {
+    collectStateFromForm();
+    renderEditors();
+    pushToBoard();
+  });
+  $('#btn-add-pending')?.addEventListener('click', addPendingPerson);
+
   ['cele-enabled', 'cele-kicker', 'cele-summary', 'cele-cheer'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -967,7 +1084,8 @@ function mergeOcrInto(base, parsed, meta) {
     date: base.date || '',
     interviews: Array.isArray(base.interviews) ? base.interviews.slice() : [],
     roles: Array.isArray(base.roles) ? base.roles.slice() : [],
-    celebrate: normalizeCelebrate(base.celebrate) // OCR never touches celebrate
+    celebrate: normalizeCelebrate(base.celebrate), // OCR never touches celebrate
+    pending: normalizePending(base.pending) // OCR never touches pending
   };
   if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
   if (meta.hasIv && Array.isArray(parsed.interviews)) {
@@ -1080,6 +1198,7 @@ function normalizeClientData(d) {
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
     celebrate: normalizeCelebrate(d.celebrate),
+    pending: normalizePending(d.pending),
     orientation: normOrientation(d.orientation, BoardTemplates[type] ? type : 'cards'),
     savedAt: typeof d.savedAt === 'number' ? d.savedAt : null
   };

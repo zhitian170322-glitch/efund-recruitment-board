@@ -76,7 +76,47 @@
       }
 
   }
+  function formatPendingDate(isoOrCn) {
+    var s = String(isoOrCn || '').trim();
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) m = s.match(/(\d{4})\s*[年\-\/.]\s*(\d{1,2})\s*[月\-\/.]\s*(\d{1,2})/);
+    if (!m) m = s.match(/(\d{1,2})\s*月\s*(\d{1,2})/);
+    if (!m) return s ? ('预计' + s + '入职') : '';
+    var mo = +m[m.length === 4 ? 2 : 1], d = +m[m.length === 4 ? 3 : 2];
+    return '预计' + mo + '月' + d + '日入职';
+  }
+  function renderPending(data) {
+    var block = document.getElementById('pending-block');
+    if (!block) return;
+    var pend = data.pending || {};
+    var people = Array.isArray(pend.people) ? pend.people.filter(function (p) {
+      return p && String(p.name || '').trim();
+    }) : [];
+    var show = !!pend.enabled && people.length > 0;
+    block.hidden = !show;
+    if (!show) return;
+    document.getElementById('pending-hint').textContent = people.length + ' 人';
+    var list = document.getElementById('pending-list');
+    list.style.gridTemplateColumns = ivColumns(people.length);
+    list.innerHTML = people.map(function (p) {
+      var when = formatPendingDate(p.date);
+      return (
+        '<article class="pd">' +
+          '<div class="pd-accent" aria-hidden="true"></div>' +
+          '<div class="pd-body">' +
+            '<div class="pd-top">' +
+              '<div class="pd-name">' + esc(p.name || '') + '</div>' +
+              '<span class="pd-pill">待入职</span>' +
+            '</div>' +
+            (p.title ? '<div class="pd-role">' + esc(p.title) + '</div>' : '') +
+            '<div class="pd-when">' + (when ? esc(when) : '&nbsp;') + '</div>' +
+            (p.follow ? '<div class="pd-follow">跟进：' + esc(p.follow) + '</div>' : '') +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+  }
   function applyOrientation(data) { document.body.classList.toggle('landscape', !!data && data.orientation === 'landscape'); }
-  window.BoardShared = { applyOrientation: applyOrientation, esc: esc, renderInterviews: renderInterviews, renderCelebrate: renderCelebrate,
+  window.BoardShared = { applyOrientation: applyOrientation, esc: esc, renderInterviews: renderInterviews, renderCelebrate: renderCelebrate, renderPending: renderPending,
     filterInterviews: function (data) { return (Array.isArray(data.interviews) ? data.interviews : []).filter(function (iv) { return iv && String(iv.name || '').trim(); }); } };
 })();

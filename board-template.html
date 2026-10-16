@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261014-1425">
+<link rel="stylesheet" href="board-shared.css?v=20261016-1000">
 
 </head>
 <body>
@@ -31,6 +31,14 @@
       </article>
     </section>
 
+    <section class="pending-block" id="pending-block" hidden>
+      <div class="section-head">
+        <h2>待入职</h2>
+        <span class="hint" id="pending-hint">0 人</span>
+      </div>
+      <div class="pending" id="pending-list"></div>
+    </section>
+
     <section class="interviews-block">
       <div class="section-head">
         <h2>今日面试跟进</h2>
@@ -49,7 +57,7 @@
 
     <footer>数据来自招聘进度表</footer>
   </div>
-  <script src="board-shared.js?v=20261014-1425"></script>
+  <script src="board-shared.js?v=20261016-1000"></script>
   <script>
     function esc(s) {
       return String(s == null ? '' : s)
@@ -123,6 +131,7 @@
 
       BoardShared.applyOrientation(data);
       BoardShared.renderCelebrate(data);
+      BoardShared.renderPending(data);
 
       document.title = (data.client || '') + '招聘看板 · ' + (data.date || '');
     }

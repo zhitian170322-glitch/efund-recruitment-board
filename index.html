@@ -441,6 +441,36 @@
   .seg { display: inline-flex; background: #e8e8ed; border-radius: 10px; padding: 3px; gap: 2px; }
   .seg button { border: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 600; padding: 6px 18px; border-radius: 8px; cursor: pointer; color: #1d1d1f; }
   .seg button.on { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+  /* 编辑器里岗位块之间的分割线（不影响看板预览） */
+  #role-editor .item-card,
+  #gx-editor .gx-group {
+    margin-bottom: 0;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+    box-shadow: none;
+  }
+  #role-editor .item-card + .item-card,
+  #gx-editor .gx-group + .gx-group {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(0,0,0,.10);
+    box-shadow: 0 -12px 0 0 transparent; /* keep spacing feel */
+    position: relative;
+  }
+  #role-editor .item-card + .item-card::before,
+  #gx-editor .gx-group + .gx-group::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 8%;
+    right: 8%;
+    height: 1px;
+    background: rgba(0,0,0,.12);
+    border-radius: 1px;
+  }
+
   @media (max-width: 1100px) {
     .layout { grid-template-columns: minmax(340px, 48fr) minmax(360px, 52fr); }
   }
@@ -681,7 +711,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261016-1000" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261016-1010" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -702,7 +732,7 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261016-1000";</script>
+  <script>window.BUILD_VERSION = "20261016-1010";</script>
   <script>
     // 自动更新：index.html 可能被浏览器/Pages 缓存 10 分钟；发现新版本就刷新一次
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -713,10 +743,10 @@
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () {});
   </script>
-  <script src="templates.js?v=20261016-1000"></script>
-  <script src="app.js?v=20261016-1000"></script>
-  <script src="ocr.js?v=20261016-1000"></script>
-  <script src="export.js?v=20261016-1000"></script>
+  <script src="templates.js?v=20261016-1010"></script>
+  <script src="app.js?v=20261016-1010"></script>
+  <script src="ocr.js?v=20261016-1010"></script>
+  <script src="export.js?v=20261016-1010"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

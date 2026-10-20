@@ -636,15 +636,16 @@ function pendingCardHTML(p, idx) {
           <input type="text" data-field="title" value="${escapeAttr(p.title || '')}" placeholder="例如：开发工程师">
         </div>
       </div>
-      <div class="field-row two">
-        <div>
-          <label>预计入职日期</label>
+      <div class="field-row">
+        <label>预计入职日期</label>
+        <div class="date-row">
           <input type="date" data-field="date" value="${escapeAttr(iso || '')}">
+          <button type="button" class="btn btn-ghost btn-sm" data-action="pending-today">今天</button>
         </div>
-        <div>
-          <label>跟进人</label>
-          <input type="text" data-field="follow" value="${escapeAttr(p.follow || '')}" placeholder="跟进人">
-        </div>
+      </div>
+      <div class="field-row">
+        <label>跟进人</label>
+        <input type="text" data-field="follow" value="${escapeAttr(p.follow || '')}" placeholder="跟进人">
       </div>
     </div>`;
 }
@@ -840,6 +841,13 @@ function initOcrPanelToggle() {
 }
 
 function bindEvents() {
+  // 日期选择器：点击输入框任意位置都打开日历（Edge/Chrome 支持 showPicker）
+  document.addEventListener('click', (e) => {
+    const el = e.target;
+    if (el && el.tagName === 'INPUT' && el.type === 'date' && typeof el.showPicker === 'function') {
+      try { el.showPicker(); } catch (err) {}
+    }
+  });
   $('#field-date').addEventListener('input', syncFromFormAndPreview);
   $('#field-date').addEventListener('change', syncFromFormAndPreview);
   $('#btn-date-today')?.addEventListener('click', () => { $('#field-date').value = cnToISO(todayCN()); syncFromFormAndPreview(); });
@@ -865,6 +873,12 @@ function bindEvents() {
     pendEd.addEventListener('input', syncFromFormAndPreview);
     pendEd.addEventListener('change', syncFromFormAndPreview);
     pendEd.addEventListener('click', (e) => {
+      const tb = e.target.closest('[data-action="pending-today"]');
+      if (tb) {
+        const inp = tb.closest('.date-row')?.querySelector('input[type="date"]');
+        if (inp) { inp.value = cnToISO(todayCN()); syncFromFormAndPreview(); }
+        return;
+      }
       const btn = e.target.closest('[data-action="remove-pending"]');
       if (!btn) return;
       const card = btn.closest('.item-card');

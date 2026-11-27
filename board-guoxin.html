@@ -224,6 +224,11 @@
     var ivBlock=document.getElementById('iv-block');
     if(ivBlock) ivBlock.hidden=!ivs.length;
     if(ivs.length) BoardShared.renderInterviews(ivs);
+    // Preview/export only: 岗位格黄色高亮（重点）groups first. Not sorted by **标红** inside a description.
+    groups=groups.map(function(x,i){return {x:x,i:i};}).sort(function(a,b){
+      var d=(b.x.highlight!==false?1:0)-(a.x.highlight!==false?1:0);
+      return d||(a.i-b.i);
+    }).map(function(w){return w.x;});
     var html=groups.map(function(x){
       var rows=(x.rows&&x.rows.length)?x.rows:[{}];
       var hl=x.highlight!==false;

@@ -260,6 +260,11 @@
         list.innerHTML = '<div class="ph-empty">暂无岗位，在左侧添加</div>';
         return;
       }
+      // Preview/export only: 紧急/重要 cards first. Form and saved order stay as edited.
+      roles = roles.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) {
+        var d = (isUrgent(b.r.urgency) ? 1 : 0) - (isUrgent(a.r.urgency) ? 1 : 0);
+        return d || (a.i - b.i);
+      }).map(function (x) { return x.r; });
       list.innerHTML = roles.map(function (r) {
         var hot = isUrgent(r.urgency);
         var title = String(r.title || '').trim() ? esc(r.title) : '<span class="muted">未命名岗位</span>';

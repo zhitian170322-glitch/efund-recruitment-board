@@ -452,13 +452,15 @@
 
 
   #role-editor .item-label,
-  #gx-editor .item-label {
+  #gx-editor .item-label,
+  #ph-editor .item-label {
     color: #0071e3;
   }
 
   /* 编辑器里岗位块之间的分割线（不影响看板预览） */
   #role-editor .item-card,
-  #gx-editor .gx-group {
+  #gx-editor .gx-group,
+  #ph-editor .item-card {
     margin-bottom: 0;
     border: 1px solid rgba(0,0,0,.06);
     border-radius: 14px;
@@ -466,7 +468,8 @@
     box-shadow: none;
   }
   #role-editor .item-card + .item-card,
-  #gx-editor .gx-group + .gx-group {
+  #gx-editor .gx-group + .gx-group,
+  #ph-editor .item-card + .item-card {
     margin-top: 18px;
     padding-top: 18px;
     border-top: 1px solid #d6e8f7;
@@ -474,7 +477,8 @@
     position: relative;
   }
   #role-editor .item-card + .item-card::before,
-  #gx-editor .gx-group + .gx-group::before {
+  #gx-editor .gx-group + .gx-group::before,
+  #ph-editor .item-card + .item-card::before {
     content: '';
     position: absolute;
     top: -10px;
@@ -549,7 +553,7 @@
           <input type="file" id="restore-file" accept="application/json,.json" hidden>
         </div>
         <p class="hint-tip warn-local">数据只保存在这台电脑的这个浏览器里，会自动保存；清除浏览器数据或换电脑会丢失，请定期「备份全部客户」。备份不含 API Key。</p>
-        <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。数据被误改可「撤销上次识图」，或 <a href="#" id="btn-load-sample" style="color:var(--link)">载入10月14日示例</a>（需确认）后手动修改。</p>
+        <p class="hint-tip">每个客户的数据分开保存在本机浏览器，切换即载入。数据被误改可「撤销上次识图」，或 <a href="#" id="btn-load-sample" style="color:var(--link)">载入当前模板示例</a>（需确认）后手动修改。</p>
       </div>
 
       <details class="panel-section ai-settings" id="ai-settings">
@@ -708,13 +712,24 @@
           <div class="section-actions" style="margin:-2px 0 12px">
             <button type="button" class="btn btn-ghost btn-sm" id="btn-gx-red" title="选中文字后点这里"><span style="color:#e5001c;font-weight:700">A</span> 选中文字标红</button>
           </div>
-          <p class="hint-tip" style="margin:-4px 0 12px">在任何格子里用 <b>**文字**</b> 标红，或选中文字后点「选中文字标红」。格子里可换行。</p>
+          <p class="hint-tip" style="margin:-4px 0 12px">重点描述、备注、面试方式、地址里用 <b>**文字**</b> 标红，或选中文字后点「选中文字标红」。格子里可换行。</p>
           <div id="gx-editor"></div>
           <div class="section-actions">
             <button type="button" class="btn btn-primary btn-sm" id="btn-add-gx">添加岗位组</button>
             <button type="button" class="btn btn-ghost btn-sm" id="btn-gx-sample">载入示例</button>
           </div>
-          <p class="hint-tip">一个岗位组 = 岗位 / 目标 / 薪资 / 年限合并成一格，下面每个子行有自己的重点技能、面试方式、地址、项目经理。相邻子行面试方式或地址相同会自动合并。</p>
+          <p class="hint-tip">一个岗位组在看板上是一整块：岗位、当日招聘目标、薪资、年限、项目组在组头（岗位名可黄底）。每个子行有自己的重点描述、面试方式、详细地址、备注。组里可以有多条子行。</p>
+        </div>
+      </div>
+      <div id="form-penghua" hidden>
+        <div class="panel-section">
+          <h2>鹏华看板 <span class="count"><span id="ph-count">0</span> 岗</span></h2>
+          <div id="ph-editor"></div>
+          <div class="section-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-add-ph">添加岗位</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-ph-sample">载入示例</button>
+          </div>
+          <p class="hint-tip">每个岗位一行。岗位状态显示成徽章（例如「开启」）。紧急程度选「紧急/重要」会在看板上用红色标出，「一般」是灰色。截止时间可空，备注始终可填，示例里备注是空的。</p>
         </div>
       </div>
     </aside>
@@ -726,7 +741,7 @@
       </div>
       <div class="preview-stage" id="preview-stage">
         <div class="preview-frame-shell" id="frame-shell">
-          <iframe id="board-frame" src="board-template.html?v=20261020-0920" title="招聘看板预览"></iframe>
+          <iframe id="board-frame" src="board-template.html?v=20261127-0940" title="招聘看板预览"></iframe>
         </div>
       </div>
     </section>
@@ -747,7 +762,7 @@
     </form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <script>window.BUILD_VERSION = "20261020-0920";</script>
+  <script>window.BUILD_VERSION = "20261127-0940";</script>
   <script>
     // 自动更新：index.html 可能被浏览器/Pages 缓存 10 分钟；发现新版本就刷新一次
     fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
@@ -758,10 +773,10 @@
       var u = new URL(location.href); u.searchParams.set('v', j.v); location.replace(u.toString());
     }).catch(function () {});
   </script>
-  <script src="templates.js?v=20261020-0920"></script>
-  <script src="app.js?v=20261020-0920"></script>
-  <script src="ocr.js?v=20261020-0920"></script>
-  <script src="export.js?v=20261020-0920"></script>
+  <script src="templates.js?v=20261127-0940"></script>
+  <script src="app.js?v=20261127-0940"></script>
+  <script src="ocr.js?v=20261127-0940"></script>
+  <script src="export.js?v=20261127-0940"></script>
   <script>
     // Fit iframe into preview shell
     window.fitPreview = fitPreview;

@@ -153,13 +153,15 @@ function emptyClientData(templateType) {
   return {
     templateType: t,
     date: todayCN(), interviews: [], roles: [], celebrate: defaultCelebrate(), pending: defaultPending(),
-    guoxin: normalizeGuoxin(t === 'guoxin' ? BoardTemplates.guoxin.empty() : null)
+    guoxin: normalizeGuoxin(t === 'guoxin' ? BoardTemplates.guoxin.empty() : null),
+    penghua: normalizePenghua(t === 'penghua' ? BoardTemplates.penghua.empty() : null)
   };
 }
 function eFundDefault() {
   const d = structuredClone(DEFAULT_DATA);
   d.templateType = 'cards';
   d.guoxin = normalizeGuoxin(null);
+  d.penghua = normalizePenghua(null);
   return d;
 }
 function loadClientStore() {
@@ -265,7 +267,7 @@ function templateOptionsHTML(selected) {
 }
 function changeTemplateType(t) {
   if (!BoardTemplates[t] || t === state.templateType) return;
-  if (!confirm(`把「${getClient()}」的模板改为「${getTemplate(t).label}」？两种模板的数据都会保留，可随时切回。`)) {
+  if (!confirm(`把「${getClient()}」的模板改为「${getTemplate(t).label}」？各模板的数据都会保留，可随时切回。`)) {
     $('#client-template').value = state.templateType;
     return;
   }
@@ -406,7 +408,8 @@ function collectStateFromForm() {
     people: $('#pending-editor') ? pendingPeople : (state.pending?.people || [])
   });
   const guoxin = collectGuoxinFromForm();
-  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, pending, guoxin, orientation: normOrientation(state.orientation, state.templateType), savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
+  const penghua = collectPenghuaFromForm();
+  state = { templateType: state.templateType || 'cards', date, interviews, roles, celebrate, pending, guoxin, penghua, orientation: normOrientation(state.orientation, state.templateType), savedAt: state.savedAt || null, ...(state.legacyDemand ? { legacyDemand: state.legacyDemand } : {}) };
   return state;
 }
 
@@ -512,11 +515,11 @@ function gxRowHTML(r, gi, ri, total) {
             <button type="button" class="btn btn-danger btn-sm" data-action="gx-row-del"${total <= 1 ? ' disabled' : ''}>删除</button>
           </span>
         </div>
-        <div class="field-row"><label>重点技能</label><textarea data-f="skills" rows="3">${escapeText(r.skills)}</textarea></div>
+        <div class="field-row"><label>重点描述</label><textarea data-f="skills" rows="3">${escapeText(r.skills)}</textarea></div>
         <div class="field-row three-even">
           <div><label>面试方式</label><textarea data-f="interview" rows="2">${escapeText(r.interview)}</textarea></div>
           <div><label>详细地址</label><textarea data-f="address" rows="2">${escapeText(r.address)}</textarea></div>
-          <div><label>项目经理</label><textarea data-f="pm" rows="2">${escapeText(r.pm)}</textarea></div>
+          <div><label>备注</label><textarea data-f="pm" rows="2">${escapeText(r.pm)}</textarea></div>
         </div>
       </div>`;
 }
@@ -537,7 +540,7 @@ function gxGroupHTML(g, gi, total) {
       </div>
       <div class="field-row"><label>岗位补充说明</label><input type="text" data-gf="roleNote" value="${escapeAttr(g.roleNote)}" placeholder="例如：**(优先统招本科，现场面试)**"></div>
       <div class="field-row three-even">
-        <div><label>当日简历目标</label><input type="text" data-gf="target" value="${escapeAttr(g.target)}" inputmode="numeric"></div>
+        <div><label>当日招聘目标</label><input type="text" data-gf="target" value="${escapeAttr(g.target)}" inputmode="numeric"></div>
         <div><label>薪资</label><input type="text" data-gf="salary" value="${escapeAttr(g.salary)}"></div>
         <div><label>年限</label><input type="text" data-gf="years" value="${escapeAttr(g.years)}"></div>
       </div>
@@ -590,6 +593,89 @@ function loadGuoxinSample() {
   pushToBoard();
   setStatus('已载入国信看板示例');
 }
+// ---- 鹏华看板编辑器 ----
+const PH_URGENCY = ['一般', '紧急/重要'];
+function phUrgencyOptions(cur) {
+  const opts = PH_URGENCY.slice();
+  if (cur && !opts.includes(cur)) opts.unshift(cur);
+  return opts.map((o) => `<option value="${escapeAttr(o)}"${o === cur ? ' selected' : ''}>${escapeText(o)}</option>`).join('');
+}
+function phRoleHTML(r, i, total) {
+  return `
+    <div class="item-card ph-role" data-i="${i}">
+      <div class="item-card-head">
+        <span class="item-label">岗位 #${i + 1}</span>
+        <span class="row-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-action="ph-up"${i === 0 ? ' disabled' : ''} title="上移">↑</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="ph-down"${i === total - 1 ? ' disabled' : ''} title="下移">↓</button>
+          <button type="button" class="btn btn-danger btn-sm" data-action="ph-del">删除</button>
+        </span>
+      </div>
+      <div class="field-row two-even">
+        <div><label>项目名称</label><input type="text" data-field="project" value="${escapeAttr(r.project)}" placeholder="例如：鹏华基金"></div>
+        <div><label>岗位名称</label><input type="text" data-field="title" value="${escapeAttr(r.title)}" placeholder="例如：ta测试"></div>
+      </div>
+      <div class="field-row three-even">
+        <div><label>岗位状态</label><input type="text" data-field="status" value="${escapeAttr(r.status)}" placeholder="开启"></div>
+        <div><label>紧急程度</label><select data-field="urgency">${phUrgencyOptions(r.urgency || '一般')}</select></div>
+        <div><label>需求数</label><input type="text" data-field="headcount" value="${escapeAttr(r.headcount)}" inputmode="numeric" placeholder="1"></div>
+      </div>
+      <div class="field-row two-even">
+        <div><label>面试官</label><input type="text" data-field="interviewer" value="${escapeAttr(r.interviewer)}" placeholder="面试官姓名"></div>
+        <div><label>薪资范围</label><input type="text" data-field="salary" value="${escapeAttr(r.salary)}" placeholder="例如：10-12k初级"></div>
+      </div>
+      <div class="field-row">
+        <label>截止时间</label>
+        <input type="text" data-field="deadline" value="${escapeAttr(r.deadline)}" placeholder="可空，例如：截至11.27 12点 (4/4)">
+      </div>
+      <div class="field-row">
+        <label>备注</label>
+        <textarea data-field="note" rows="2" placeholder="可空">${escapeText(r.note)}</textarea>
+      </div>
+    </div>`;
+}
+function collectPenghuaFromForm() {
+  if (!$('#ph-editor')) return normalizePenghua(state.penghua);
+  const roles = $$('#ph-editor .ph-role').map((card) => {
+    const v = (f) => (card.querySelector(`[data-field="${f}"]`)?.value || '');
+    return {
+      project: v('project'), title: v('title'), status: v('status'), urgency: v('urgency'),
+      interviewer: v('interviewer'), deadline: v('deadline'), headcount: v('headcount'),
+      salary: v('salary'), note: v('note')
+    };
+  });
+  return normalizePenghua({ roles });
+}
+function renderPenghuaEditor() {
+  const ed = $('#ph-editor');
+  if (!ed) return;
+  const p = normalizePenghua(state.penghua);
+  state.penghua = p;
+  ed.innerHTML = p.roles.length
+    ? p.roles.map((r, i) => phRoleHTML(r, i, p.roles.length)).join('')
+    : '<p class="editor-empty">暂无岗位，点击下方「添加岗位」，或用截图识别 / 载入示例</p>';
+  updatePenghuaCount();
+}
+function updatePenghuaCount() {
+  const n = (state.penghua && state.penghua.roles) ? state.penghua.roles.length : 0;
+  if ($('#ph-count')) $('#ph-count').textContent = String(n);
+}
+function penghuaMutate(fn) {
+  markDirty();
+  collectStateFromForm();
+  fn(state.penghua.roles);
+  renderEditors();
+  pushToBoard();
+}
+function loadPenghuaSample() {
+  if (state.penghua.roles.length && !confirm('用截图里的示例覆盖当前鹏华看板内容？')) return;
+  collectStateFromForm();
+  state.penghua = normalizePenghua(BoardTemplates.penghua.sample());
+  renderEditors();
+  pushToBoard();
+  setStatus('已载入鹏华看板示例');
+}
+
 function markRedSelection() {
   const el = lastRichField;
   if (!el || !document.body.contains(el)) { setStatus('先点进一个文字框并选中要标红的文字', true); return; }
@@ -697,6 +783,7 @@ function renderEditors() {
   const pendBody = $('#pending-body');
   if (pendBody) pendBody.hidden = !pend.enabled;
   renderGuoxinEditor();
+  renderPenghuaEditor();
 }
 
 function syncFromFormAndPreview() {
@@ -713,6 +800,7 @@ function syncFromFormAndPreview() {
   const pendBody = $('#pending-body');
   if (pendBody) pendBody.hidden = !state.pending?.enabled;
   updateGuoxinCount();
+  updatePenghuaCount();
   pushToBoard();
 }
 
@@ -980,6 +1068,27 @@ function bindEvents() {
       }
     });
   }
+  $('#btn-add-ph')?.addEventListener('click', () => penghuaMutate((rs) => {
+    const last = rs[rs.length - 1] || {};
+    rs.push({ project: last.project || '', title: '', status: '开启', urgency: '一般', interviewer: '', deadline: '', headcount: '', salary: '', note: '' });
+  }));
+  $('#btn-ph-sample')?.addEventListener('click', loadPenghuaSample);
+  const phEd = $('#ph-editor');
+  if (phEd) {
+    phEd.addEventListener('input', syncFromFormAndPreview);
+    phEd.addEventListener('change', syncFromFormAndPreview);
+    phEd.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const i = Number(btn.closest('.ph-role')?.dataset.i);
+      const mv = (arr, a, b) => { if (b >= 0 && b < arr.length) arr.splice(b, 0, arr.splice(a, 1)[0]); };
+      switch (btn.dataset.action) {
+        case 'ph-del': if (confirm('删除这个岗位？')) penghuaMutate((rs) => rs.splice(i, 1)); break;
+        case 'ph-up': penghuaMutate((rs) => mv(rs, i, i - 1)); break;
+        case 'ph-down': penghuaMutate((rs) => mv(rs, i, i + 1)); break;
+      }
+    });
+  }
   $('#btn-load-sample')?.addEventListener('click', (e) => { e.preventDefault(); loadSampleIntoCurrent(); });
   const addCele = $('#btn-add-cele');
   if (addCele) addCele.addEventListener('click', addCelebratePerson);
@@ -1096,23 +1205,18 @@ function getBoardState() {
 
 
 function mergeOcrInto(base, parsed, meta) {
+  const out = normalizeClientData(base);
+  if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
   if (meta.templateType === 'guoxin') {
-    const out = normalizeClientData(base);
-    if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
     const gx = normalizeGuoxin(parsed);
     out.guoxin = { title: gx.title || out.guoxin.title, groups: gx.groups };
     return out;
   }
-  const out = {
-    templateType: base.templateType || 'cards',
-    guoxin: normalizeGuoxin(base.guoxin),
-    date: base.date || '',
-    interviews: Array.isArray(base.interviews) ? base.interviews.slice() : [],
-    roles: Array.isArray(base.roles) ? base.roles.slice() : [],
-    celebrate: normalizeCelebrate(base.celebrate), // OCR never touches celebrate
-    pending: normalizePending(base.pending) // OCR never touches pending
-  };
-  if (parsed.date && cnToISO(parsed.date)) out.date = normDate(parsed.date);
+  if (meta.templateType === 'penghua') {
+    out.penghua = normalizePenghua(parsed.penghua || parsed);
+    return out;
+  }
+  // OCR never touches celebrate / pending / the other template's roles
   if (meta.hasIv && Array.isArray(parsed.interviews)) {
     out.interviews = parsed.interviews.map((iv) => ({
       name: String(iv?.name || '').trim(),
@@ -1219,6 +1323,7 @@ function normalizeClientData(d) {
   const out = {
     templateType: BoardTemplates[type] ? type : 'cards',
     guoxin: normalizeGuoxin(guoxin),
+    penghua: normalizePenghua(d.penghua),
     date: normDate(d.date),
     interviews: Array.isArray(d.interviews) ? d.interviews : [],
     roles: Array.isArray(d.roles) ? d.roles : [],
@@ -1235,13 +1340,18 @@ function normalizeClientData(d) {
 // Manual repair for polluted data: reload the built-in Oct 14 sample into the CURRENT client (confirm, never automatic)
 function loadSampleIntoCurrent() {
   const c = getClient();
-  if (!confirm(`用内置的 10月14日 示例数据覆盖「${c}」当前内容？（可先导出 JSON 备份）`)) return;
+  const label = getTemplate(state.templateType).label;
+  if (!confirm(`用「${label}」的内置示例覆盖「${c}」当前内容？（可先导出 JSON 备份）`)) return;
   if (state.templateType === 'guoxin') {
     state.guoxin = normalizeGuoxin(BoardTemplates.guoxin.sample());
+  } else if (state.templateType === 'penghua') {
+    state.penghua = normalizePenghua(BoardTemplates.penghua.sample());
   } else {
-    const keep = state.guoxin;
+    const keepGx = state.guoxin;
+    const keepPh = state.penghua;
     state = eFundDefault();
-    state.guoxin = keep;
+    state.guoxin = keepGx;
+    state.penghua = keepPh;
   }
   renderEditors();
   pushToBoard();

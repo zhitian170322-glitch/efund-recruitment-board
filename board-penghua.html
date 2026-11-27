@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>招聘看板</title>
+<link rel="stylesheet" href="board-shared.css?v=20261127-0940">
+<style>
+  .wrap { max-width: none; }
+  .summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 18px 22px 16px;
+    margin-bottom: 22px;
+  }
+  .summary-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.3; }
+  .summary-sub { margin-top: 4px; font-size: 16px; font-weight: 600; color: #6e6e73; }
+  .summary-stats { display: flex; gap: 10px; flex-shrink: 0; }
+  .stat { background: #f5f5f7; border-radius: 16px; padding: 8px 18px 8px; text-align: center; min-width: 118px; }
+  .stat b { display: block; font-size: 40px; line-height: 1.05; letter-spacing: -0.03em; }
+  .stat span { display: block; font-size: 15px; font-weight: 700; color: #6e6e73; }
+  .stat em { display: block; font-style: normal; font-size: 13px; font-weight: 700; color: #86868b; min-height: 1.2em; }
+  .stat.hot { background: #fff1f0; }
+  .stat.hot b, .stat.hot span, .stat.hot em { color: #ff3b30; }
+
+  .roles-block > .section-head h2 { color: #1d1d1f; }
+  .roles-block > .section-head .hint { color: #6e6e73; }
+  .roles-block > .section-head .hint .hot { color: #ff3b30; font-weight: 700; }
+
+  .ph-panel {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(0,0,0,.04);
+    overflow: hidden;
+  }
+  .ph-head, .ph-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 1.4fr) 96px 132px minmax(96px, .9fr) 72px minmax(120px, 1fr) minmax(168px, 1.15fr);
+    gap: 8px 14px;
+    align-items: center;
+  }
+  .ph-head {
+    padding: 14px 20px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #86868b;
+  }
+  .ph-row {
+    padding: 14px 20px;
+    border-top: 1px solid #efeff4;
+  }
+  .ph-row.urgent {
+    background: #fff5f5;
+    box-shadow: inset 6px 0 0 #ff3b30;
+  }
+  .ph-row.calm .pill.urg { background: #f2f2f7; color: #8e8e93; }
+  .ph-name { min-width: 0; }
+  .ph-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; color: #000; word-break: break-word; }
+  .ph-project { margin-top: 2px; font-size: 16px; font-weight: 700; color: #0071e3; line-height: 1.35; word-break: break-word; }
+  .ph-cell { min-width: 0; }
+  .ph-person { font-size: 22px; font-weight: 700; color: #1d1d1f; word-break: break-word; }
+  .ph-count { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; text-align: center; color: #000; }
+  .ph-salary { font-size: 18px; font-weight: 700; color: #1d1d1f; word-break: break-word; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .pill.st { background: #e8e8ed; color: #3a3a3c; }
+  .pill.st.on { background: #34c759; color: #fff; }
+  .pill.urg.hot { background: #ff3b30; color: #fff; font-size: 16px; padding: 4px 12px; }
+  .pill.urg.calm { background: #f2f2f7; color: #8e8e93; }
+  .ph-badge { text-align: center; }
+  .deadline { font-size: 17px; font-weight: 700; line-height: 1.35; word-break: break-word; }
+  .deadline.has {
+    display: inline-block;
+    background: #fff4e5;
+    color: #9a5b00;
+    border-radius: 10px;
+    padding: 6px 10px;
+  }
+  .deadline.empty { color: #c7c7cc; font-weight: 600; }
+  .ph-note {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+    padding-top: 8px;
+    border-top: 1px dashed #e4e4e9;
+    font-size: 17px;
+    font-weight: 600;
+    color: #1d1d1f;
+    line-height: 1.45;
+  }
+  .ph-note i { font-style: normal; color: #86868b; font-weight: 700; margin-right: 8px; }
+  .muted { color: #aeaeb2; font-weight: 600; }
+  .ph-empty { padding: 28px 22px; text-align: center; color: #6e6e73; font-size: 20px; font-weight: 600; }
+  body.landscape .ph-title { font-size: 30px; }
+  body.landscape .summary-title { font-size: 30px; }
+</style>
+</head>
+<body>
+  <div class="wrap" id="board">
+    <div class="header">
+      <h1 id="board-title">招聘看板</h1>
+      <div class="header-date" id="board-date">—</div>
+    </div>
+
+    <section class="summary" id="summary">
+      <div>
+        <div class="summary-title" id="sum-title">在招一览</div>
+        <div class="summary-sub">红标是紧急/重要，灰标是一般</div>
+      </div>
+      <div class="summary-stats">
+        <div class="stat"><b id="sum-roles">0</b><span>岗位</span><em id="sum-open"></em></div>
+        <div class="stat hot"><b id="sum-urgent">0</b><span>紧急/重要</span><em id="sum-urgent-hc"></em></div>
+        <div class="stat"><b id="sum-hc">0</b><span>需求人数</span><em id="sum-hc-sub"></em></div>
+      </div>
+    </section>
+
+    <section class="celebrate-block" id="cele-block" hidden>
+      <div class="section-head">
+        <h2>今日入职 ✨</h2>
+        <span class="hint" id="cele-hint">0 人</span>
+      </div>
+      <article class="celebrate" id="cele-card">
+        <div class="celebrate-blob a" aria-hidden="true"></div>
+        <div class="celebrate-blob b" aria-hidden="true"></div>
+        <div class="celebrate-blob c" aria-hidden="true"></div>
+        <div class="celebrate-deco l" aria-hidden="true">🎆</div>
+        <div class="celebrate-deco r" aria-hidden="true">🥳</div>
+        <div class="celebrate-hi" id="cele-hi"></div>
+        <div class="celebrate-mid" id="cele-mid"></div>
+        <div class="celebrate-lo" id="cele-lo"></div>
+      </article>
+    </section>
+
+    <section class="interviews-block">
+      <div class="section-head">
+        <h2>今日面试跟进</h2>
+        <span class="hint" id="iv-hint">0 人</span>
+      </div>
+      <div class="interviews" id="iv-list"></div>
+    </section>
+
+    <section class="roles-block">
+      <div class="section-head">
+        <h2>岗位一览</h2>
+        <span class="hint" id="role-hint">0 岗</span>
+      </div>
+      <div class="ph-panel" id="role-list"></div>
+    </section>
+    <footer>数据来自岗位需求表</footer>
+  </div>
+  <script src="board-shared.js?v=20261127-0940"></script>
+  <script>
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function isUrgent(u) {
+      u = String(u || '').trim();
+      if (!u || u === '一般') return false;
+      return /紧急|重要/.test(u);
+    }
+    function numOf(s) {
+      var m = String(s || '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+      return m ? parseFloat(m[0]) : 0;
+    }
+    function fmt(n) {
+      var x = Math.round(n * 10) / 10;
+      return String(x);
+    }
+    function renderBoard(data) {
+      data = data || {};
+      var roles = (data.penghua && Array.isArray(data.penghua.roles) ? data.penghua.roles : []).filter(function (r) {
+        return r && (r.title || r.project || r.interviewer || r.salary || r.deadline || r.note || r.headcount || r.status);
+      });
+      document.getElementById('board-title').textContent = (data.client || '') + '招聘看板';
+      document.getElementById('board-date').textContent = data.date || '—';
+      document.title = (data.client || '') + '招聘看板 · ' + (data.date || '');
+
+      var projects = [];
+      roles.forEach(function (r) {
+        var p = String(r.project || '').trim();
+        if (p && projects.indexOf(p) < 0) projects.push(p);
+      });
+      document.getElementById('sum-title').textContent = projects.length === 1 ? (projects[0] + ' · 在招一览') : (projects.length > 1 ? '多项目在招' : '在招一览');
+
+      var urgent = roles.filter(function (r) { return isUrgent(r.urgency); });
+      var openN = roles.filter(function (r) { return String(r.status || '') === '开启'; }).length;
+      var hc = roles.reduce(function (a, r) { return a + numOf(r.headcount); }, 0);
+      var urgHc = urgent.reduce(function (a, r) { return a + numOf(r.headcount); }, 0);
+      document.getElementById('sum-roles').textContent = String(roles.length);
+      document.getElementById('sum-open').textContent = roles.length ? (openN === roles.length ? '全部开启' : ('开启 ' + openN)) : '';
+      document.getElementById('sum-urgent').textContent = String(urgent.length);
+      document.getElementById('sum-urgent-hc').textContent = urgent.length ? ('需求 ' + fmt(urgHc)) : '';
+      document.getElementById('sum-hc').textContent = fmt(hc);
+      document.getElementById('sum-hc-sub').textContent = '';
+      document.getElementById('role-hint').innerHTML = roles.length
+        ? (roles.length + ' 岗 · <span class="hot">紧急 ' + urgent.length + '</span>')
+        : '0 岗';
+
+      BoardShared.applyOrientation(data);
+      BoardShared.renderCelebrate(data);
+      BoardShared.renderInterviews(BoardShared.filterInterviews(data));
+
+      var head = '<div class="ph-head"><div>岗位 / 项目</div><div>状态</div><div>紧急程度</div><div>面试官</div><div style="text-align:center">需求</div><div>薪资范围</div><div>截止时间</div></div>';
+      if (!roles.length) {
+        document.getElementById('role-list').innerHTML = '<div class="ph-empty">暂无岗位，在左侧添加</div>';
+        return;
+      }
+      var rows = roles.map(function (r) {
+        var hot = isUrgent(r.urgency);
+        var title = String(r.title || '').trim() ? esc(r.title) : '<span class="muted">未命名岗位</span>';
+        var project = String(r.project || '').trim() ? '<div class="ph-project">' + esc(r.project) + '</div>' : '';
+        var st = String(r.status || '').trim();
+        var stHtml = st ? '<span class="pill st' + (st === '开启' ? ' on' : '') + '">' + esc(st) + '</span>' : '<span class="muted">—</span>';
+        var urg = String(r.urgency || '一般');
+        var urgHtml = '<span class="pill urg ' + (hot ? 'hot' : 'calm') + '">' + esc(urg) + '</span>';
+        var person = String(r.interviewer || '').trim() ? esc(r.interviewer) : '<span class="muted">—</span>';
+        var count = String(r.headcount || '').trim() ? esc(r.headcount) : '<span class="muted">—</span>';
+        var salary = String(r.salary || '').trim() ? esc(r.salary) : '<span class="muted">—</span>';
+        var deadline = String(r.deadline || '').trim()
+          ? '<span class="deadline has">' + esc(r.deadline) + '</span>'
+          : '<span class="deadline empty">—</span>';
+        var note = String(r.note || '').trim()
+          ? '<div class="ph-note"><i>备注</i><span>' + esc(r.note).replace(/\n/g, '<br>') + '</span></div>'
+          : '';
+        return '<article class="ph-row ' + (hot ? 'urgent' : 'calm') + '">'
+          + '<div class="ph-name"><div class="ph-title">' + title + '</div>' + project + '</div>'
+          + '<div class="ph-badge">' + stHtml + '</div>'
+          + '<div class="ph-badge">' + urgHtml + '</div>'
+          + '<div class="ph-person">' + person + '</div>'
+          + '<div class="ph-count">' + count + '</div>'
+          + '<div class="ph-salary">' + salary + '</div>'
+          + '<div>' + deadline + '</div>'
+          + note
+          + '</article>';
+      }).join('');
+      document.getElementById('role-list').innerHTML = head + rows;
+    }
+    window.renderBoard = renderBoard;
+    window.addEventListener('message', function (ev) {
+      if (ev.data && ev.data.type === 'BOARD_DATA') renderBoard(ev.data.payload);
+    });
+    try { parent.postMessage({ type: 'BOARD_READY' }, '*'); } catch (e) {}
+  </script>
+</body>
+</html>

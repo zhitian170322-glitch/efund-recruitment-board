@@ -1,4 +1,4 @@
-// 易方达 / 国信 看板共用：入职庆祝 + 今日面试跟进（同一份渲染代码，保证两边完全一致）
+// 易方达 / 国信 / 鹏华 看板共用：入职庆祝 + 今日面试跟进（同一份渲染代码，保证各模板一致）
 (function () {
   function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function roundClass(round) { return round === '一面' ? 'r1' : 'r2'; }

@@ -2,36 +2,38 @@
    新增模板：在 BoardTemplates 里加一项，并提供对应的 board-*.html 与表单区块。 */
 
 
-// 国信看板：一个岗位分组（岗位/目标/薪资/年限合并）含多条子行（重点技能/面试方式/详细地址/项目经理）
-// 单元格里用 **文字** 标红
+// 国信看板：一个岗位分组（岗位/当日招聘目标/薪资/年限/项目组）含多条子行
+// （重点描述/面试方式/详细地址/备注）。单元格里用 **文字** 标红。
+// 示例来自国信旧表截图，字段名与已保存数据的键保持一致。
 const GUOXIN_SAMPLE = {
   title: '当日需求重点(活跃岗位)-重点看“紧急状态”',
   groups: [
-    { team: '', role: '测试', roleNote: '**(优先统招本科，现场面试)**', highlight: true, target: '3', salary: '11.5-14k', years: '3年以上', rows: [
-      { skills: '1.负责委外投资交易系统测试\n2、大专3年以上\n3、有证券相关经验优先', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '卫兆伟' },
-      { skills: '参与互学E，邮箱，信创BPM、爱问机器人等系统的用户支持和系统功能测试工作\n本科学历', interview: '线上笔试+线上面试', address: '**福田（国信金融大厦）**', pm: '王乃康（左颖辉）' }
-    ] },
     { team: '', role: '产品经理', roleNote: '', highlight: true, target: '2', salary: '14-15.5', years: '3年以上', rows: [
       { skills: '本科以上学历\n熟悉金融市场与产品体系，了解股票、基金、基金投顾等投资流程；\n关键词：内部管理、流程、代销、产品中心、基金，年龄30岁以下，多留意女性', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '余才-运营产品与质量组' },
-      { skills: '数据类产品---运营支持组(资讯数据组)', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '彭红江' },
-      { skills: '1.有证券基金行业投资交易、私募基金托管、券商资管相关业务知识者优先\n2、专科以上学历，35以下，性别不限', interview: '线上笔试+**现场面试**', address: '福田购物公园地铁站', pm: '卫兆伟' }
+      { skills: '数据类产品---运营支持组(资讯数据组)', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '彭红江' }
     ] },
-    { team: '', role: 'Java', roleNote: '**(优先统招本科)**', highlight: true, target: '4', salary: '13-16', years: '3年以上', rows: [
+    { team: '', role: 'Java', roleNote: '（优先统招本科）', highlight: true, target: '4', salary: '13-16', years: '3年以上', rows: [
       { skills: '1，负责资产配置、基金评价、量化股票策略投研工作平台等系统核心模块设计与开发。\n2，大专4年以上，28以上', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '燕振华' },
       { skills: '**推高级需求（5年以上）**\n1. 优先有**大厂后端**相关经验，熟悉编译工具配置管理、 （非业务类开发经验）\n2. 开发语言：Java为主，具备扎实的Java基础能力。\n3. 有AI经验，33以下', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '庄晓雯\n（要求较高）' },
-      { skills: '支持数据平台、投顾类系统的开发运维，\nJava+**ETL开发，本科**\n**熟悉恒 生基金投顾系统、恒生资 配配置系统、金证柜台系 统，金证清算系统者优先**', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '李光宇' },
-      { skills: '1. 参与投资交易支持系统、鑫投管平台等系统的后端开发、维护和优化工作。\n2. 研究并运用AI工具对开发赋能。\n3. 本科4年，**大专6年**', interview: '线上笔试+**现场/线上面试**', address: '罗湖（国信证券大厦）', pm: '陈运聪' }
+      { skills: '**推高级需求（5年以上）**\n负责券商投研平台、微服务技术运营平台、天讯固收微服务管理平台、鲁班运维一体化平台、防火墙策略管理平台的后台研发工作\n年龄：35岁以下', interview: '线上笔试+线上面试', address: '罗湖（国信证券大厦）', pm: '周昊天\n线上+线上笔试+**现场二面**' },
+      { skills: '资产与数据人员信息系统自研系统的开发工作\n2、熟悉Java、vue、AI Coding\n3、专科5年以上，本科3年起', interview: '线上笔试+线上面试', address: '福田购物公园地铁站', pm: '梁忠财' }
     ] },
-    { team: '', role: 'Python', roleNote: '', highlight: true, target: '1', salary: '13-16', years: '3-5年', rows: [
-      { skills: 'python编程+数据库SQL\n35以下', interview: '线上笔试+**现场面试（二面）**', address: '孙：福田购物公园地铁站', pm: '孙鸿滨组' }
-    ] },
-    { team: '', role: 'Python', roleNote: '', highlight: true, target: '2', salary: '13-16', years: '3-5年', rows: [
-      { skills: '1、负责数据集成平台的功能的开发与优化\n2、了解大数据Hadoop、GP等常规的大数据技能，以及对datax等数据同步组件有一定的应用能力\n3、有一定的AI工程应用实践能力\n本科', interview: '线上笔试+线上面试', address: '罗湖红岭地铁站', pm: '周维健\n张金苓（现场面试）' }
-    ] },
-    { team: '', role: 'C++', roleNote: '', highlight: true, target: '1', salary: '13-16', years: '3年以上', rows: [
-      { skills: '行情中心数据客户端、认证系统、行情网关程序的开发与测试。\nC++软件系统开发经验\n专科以上学历', interview: '线上笔试+线上面试', address: '罗湖红岭地铁站', pm: '王斌' },
-      { skills: '负责债券量化交易系统的开发工作\n 具有两年以上 C++项目开发经验，**熟悉QT框架**\n有**AI coding**的项目经验较优先', interview: '线上笔试+线上面试', address: '罗湖红岭地铁站', pm: '唐聪林' }
+    { team: '', role: 'Python', roleNote: '', highlight: true, target: '2', salary: '16-18', years: '5年以上', rows: [
+      { skills: '**推高级需求（5年以上）**\n1、自动化测试平台的测试开发工作\n2、有Java/C++/python项目开发经验，有大型金融项目开发经验优先\n3、统招一本及以上学历，有华为、阿里等大厂经验', interview: '线下笔试+线下面试', address: '罗湖（国信证券大厦）', pm: '张金苓' }
     ] }
+  ]
+};
+
+// 鹏华看板：一行一个岗位。备注在示例里留空，表单里始终可编辑。
+const PENGHUA_SAMPLE = {
+  roles: [
+    { project: '鹏华基金', title: 'ta测试', status: '开启', urgency: '一般', interviewer: '李昭玥', deadline: '', headcount: '1', salary: '10-12k初级', note: '' },
+    { project: '鹏华基金', title: 'ta后端-高', status: '开启', urgency: '一般', interviewer: '谢立东', deadline: '', headcount: '1', salary: '10-17k中级', note: '' },
+    { project: '鹏华基金', title: '10.14测试', status: '开启', urgency: '紧急/重要', interviewer: '史玲丽', deadline: '', headcount: '2', salary: '10-14k中级', note: '' },
+    { project: '鹏华基金', title: '投研-测试', status: '开启', urgency: '紧急/重要', interviewer: '陶冶', deadline: '', headcount: '1', salary: '10-13k中级', note: '' },
+    { project: '鹏华基金', title: '品牌宣传经理', status: '开启', urgency: '一般', interviewer: '庞春宇', deadline: '', headcount: '1', salary: '10-13k中级', note: '' },
+    { project: '鹏华基金', title: '估值会计', status: '开启', urgency: '一般', interviewer: '李昭玥', deadline: '', headcount: '1', salary: '10-12k初级', note: '' },
+    { project: '鹏华基金', title: '投研-java', status: '开启', urgency: '紧急/重要', interviewer: '王丁', deadline: '截至11.27 12点 (4/4)', headcount: '1', salary: '10-13k中级', note: '' }
   ]
 };
 
@@ -88,6 +90,25 @@ function migrateDemandToGuoxin(demand) {
   return normalizeGuoxin({ title: '当日需求重点(活跃岗位)-重点看“紧急状态”', groups });
 }
 
+function normalizePenghua(p) {
+  p = p && typeof p === 'object' ? p : {};
+  const S = (v) => (v == null ? '' : String(v)).replace(/\r\n/g, '\n').trim();
+  const roles = Array.isArray(p.roles) ? p.roles : [];
+  return {
+    roles: roles.map((r) => ({
+      project: S(r?.project),
+      title: S(r?.title),
+      status: S(r?.status),
+      urgency: S(r?.urgency) || '一般',
+      interviewer: S(r?.interviewer),
+      deadline: S(r?.deadline),
+      headcount: S(r?.headcount),
+      salary: S(r?.salary),
+      note: S(r?.note)
+    }))
+  };
+}
+
 const BoardTemplates = {
   cards: {
     label: '易方达看板（面试 + 优先岗位）',
@@ -123,9 +144,9 @@ const BoardTemplates = {
   guoxin: {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
-    boardWidth: 2100,
-    boardWidthLandscape: 3600,
-    defaultOrientation: 'landscape',
+    boardWidth: 1680,
+    boardWidthLandscape: 2800,
+    defaultOrientation: 'portrait',
     formSelector: '#form-guoxin',
     ocrUploads: { a: '国信需求表截图', b: null },
     sample() { return structuredClone(GUOXIN_SAMPLE); },
@@ -135,14 +156,40 @@ const BoardTemplates = {
         '你是招聘需求表信息提取助手。请从截图中提取表格，只返回 JSON，不要解释，不要用 markdown 代码块。',
         '逐格忠实抄写，不要编造、不要改写、不要概括；看不清或空白的单元格留空字符串。单元格里的换行用 \\n 保留。',
         '表格结构：第一行是标题（例如「当日需求重点(活跃岗位)-重点看“紧急状态”」）填 title。',
-        '列：项目组、岗位、当日简历目标、薪资、年限、重点技能、面试方式、详细地址、备注。',
-        '「岗位」「当日简历目标」「薪资」「年限」「项目组」通常是合并单元格，覆盖多行——每个这样的合并块是 groups 里的一项；它覆盖的每一行是该组 rows 里的一项。',
-        'role = 岗位名称（如「测试」「Java」）；岗位格里括号补充说明（如「(优先统招本科，现场面试)」）放 roleNote。',
-        '每个子行：skills = 重点技能，interview = 面试方式，address = 详细地址，pm = 「备注」列（该列内容是项目经理姓名）。',
+        '列：项目组、岗位、当日招聘目标（旧表也可能写「当日简历目标」）、薪资、年限、重点描述（旧表也可能写「重点技能」）、面试方式、详细地址、备注。',
+        '「岗位」「当日招聘目标」「薪资」「年限」「项目组」通常是合并单元格，覆盖多行——每个这样的合并块是 groups 里的一项；它覆盖的每一行是该组 rows 里的一项。',
+        'role = 岗位名称（如「产品经理」「Java」「Python」）；岗位格里括号补充说明（如「（优先统招本科）」）放 roleNote，不要并进 role。',
+        'target = 当日招聘目标，salary = 薪资，years = 年限，team = 项目组（空着就空字符串）。',
+        '每个子行：skills = 重点描述，interview = 面试方式，address = 详细地址，pm = 备注（可含人名，也可含其他说明，换行保留）。',
         '面试方式、详细地址如果是合并单元格覆盖多行，请复制到它覆盖的每一行。',
-        '原图中红色字体的文字，用 **两个星号** 包起来，例如「线上笔试+**现场面试**」。',
+        '原图中红色字体的文字，用 **两个星号** 包起来，例如「**推高级需求（5年以上）**」「优先有**大厂后端**相关经验」「线上笔试+**现场二面**」。黄底岗位名不要加星号。',
         'JSON 结构必须严格为：',
         '{"date":"","title":"","groups":[{"team":"","role":"","roleNote":"","target":"","salary":"","years":"","rows":[{"skills":"","interview":"","address":"","pm":""}]}]}'
+      ].join('\n');
+    }
+  },
+  penghua: {
+    label: '鹏华看板（岗位需求表）',
+    boardSrc: 'board-penghua.html',
+    boardWidth: 1560,
+    boardWidthLandscape: 2400,
+    defaultOrientation: 'portrait',
+    formSelector: '#form-penghua',
+    ocrUploads: { a: '鹏华岗位表截图', b: null },
+    sample() { return structuredClone(PENGHUA_SAMPLE); },
+    empty() { return { roles: [] }; },
+    ocrPrompt() {
+      return [
+        '你是招聘岗位表信息提取助手。请从截图中提取表格，只返回 JSON，不要解释，不要用 markdown 代码块。',
+        '逐格忠实抄写，不要编造、不要改写、不要概括；看不清或空白的单元格留空字符串。',
+        '忽略水印（例如斜着的「宋德科」「文静」），不要写进任何字段。',
+        '每一行岗位是 roles 里的一项，按表中从上到下的顺序。列映射：',
+        'project = 项目名称；title = 岗位名称；status = 岗位状态（如「开启」）；',
+        'urgency = 紧急程度：红底或写着「紧急/重要」填「紧急/重要」，「一般」或黄底一般填「一般」；',
+        'interviewer = 面试官，姓名原样抄写；deadline = 截止时间，原样抄写（例如「截至11.27 12点 (4/4)」），单元格为空就空字符串；',
+        'headcount = 需求数；salary = 薪资范围；note = 备注。没有备注列，或单元格为空，note 用空字符串，不要自己写备注。',
+        'JSON 结构必须严格为：',
+        '{"date":"","roles":[{"project":"","title":"","status":"","urgency":"一般","interviewer":"","deadline":"","headcount":"","salary":"","note":""}]}'
       ].join('\n');
     }
   }
@@ -157,4 +204,5 @@ window.getTemplate = getTemplate;
 window.normalizeDemand = normalizeDemand;
 window.URGENCY_OPTIONS = URGENCY_OPTIONS;
 window.normalizeGuoxin = normalizeGuoxin;
+window.normalizePenghua = normalizePenghua;
 window.migrateDemandToGuoxin = migrateDemandToGuoxin;

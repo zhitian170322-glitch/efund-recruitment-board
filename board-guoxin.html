@@ -4,98 +4,173 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261020-0920">
-<style>  .summary { background:#fff; border-radius:24px; box-shadow:var(--shadow); padding:22px 28px; margin-bottom:22px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
-  .summary-title { font-size:30px; font-weight:700; letter-spacing:-0.02em; line-height:1.3; }
-  .summary-stats { display:flex; gap:12px; flex-shrink:0; }
-  .stat { background:var(--chip); border-radius:16px; padding:10px 20px; text-align:center; min-width:120px; }
-  .stat b { display:block; font-size:38px; line-height:1.1; letter-spacing:-0.02em; }
-  .stat span { font-size:17px; color:var(--secondary); }
-  .stat.red b { color:var(--urgent); }
-  .roles { grid-template-columns: 1fr 1fr 1fr; gap:16px; }
-  .role { display:flex; flex-direction:column; padding:20px 20px 16px 18px; }
-  .role.hl { background:linear-gradient(180deg,#fff 0%,#fff8f7 100%); }
-  .badge { display:inline-block; font-size:15px; font-weight:700; color:#fff; background:var(--urgent); border-radius:100px; padding:3px 10px; margin-left:8px; vertical-align:middle; }
-  .badge.blue { background:var(--link); }
-  .seq { font-size:16px; color:#86868b; font-weight:700; margin-left:6px; }
-  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-  .chip { background:var(--chip); border-radius:100px; padding:5px 14px; font-size:18px; font-weight:700; color:#1d1d1f; }
-  .chip.target { background:#ffe9e7; color:#d70015; }
-  .skills { font-size:19px; color:#1d1d1f; line-height:1.5; margin-top:12px; padding-top:12px; border-top:1px solid #e8e8ed; flex:1; word-break:break-word; }
-  .meta { font-size:18px; color:#1d1d1f; margin-top:10px; line-height:1.45; }
-  .meta i { font-style:normal; color:#86868b; margin-right:6px; }
-  .red { color:#ff3b30; font-weight:700; }
+<link rel="stylesheet" href="board-shared.css?v=20261127-0940">
+<style>
+  .wrap { max-width: none; }
+  .summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 18px 22px;
+    margin-bottom: 22px;
+  }
+  .summary-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.35; }
+  .summary-legend { margin-top: 6px; font-size: 15px; font-weight: 600; color: #6e6e73; }
+  .summary-stats { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .stat { background: #f5f5f7; border-radius: 16px; padding: 8px 16px; text-align: center; min-width: 112px; }
+  .stat b { display: block; font-size: 36px; line-height: 1.05; letter-spacing: -0.03em; }
+  .stat span { font-size: 14px; font-weight: 700; color: #6e6e73; }
+  .stat.hot { background: #fff1f0; }
+  .stat.hot b, .stat.hot span { color: #ff3b30; }
+  .red { color: #ff3b30; font-weight: 700; }
 
-  /* 国信岗位卡：字号不小于易方达岗位卡，更深更粗 */
-  body:not(.landscape) .wrap { max-width: 1828px; }
-  body:not(.landscape) .roles { grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .role { padding: 22px 24px 20px 20px; }
-  .role .role-title { font-size: 36px; line-height: 1.3; }
-  .role .role-team { font-size: 23px; font-weight: 700; margin-top: 6px; }
-  .seq { font-size: 20px; }
-  .badge { font-size: 18px; padding: 4px 12px; }
-  .chip { font-size: 22px; padding: 6px 16px; color: #000; }
-  .skills { font-size: 24px; color: #000; font-weight: 600; line-height: 1.5; }
-  .meta { font-size: 22px; color: #000; font-weight: 700; }
-  .meta i { color: #6e6e73; }
+  .roles-block > .section-head h2 { color: #1d1d1f; }
+  .roles-block > .section-head .hint { color: #6e6e73; }
 
-  /* 竖屏：2 列，汇总卡单独一行 */
-  .header { flex-wrap: wrap; align-items: center; }
-  .header .summary { order: 3; flex: 1 1 100%; margin: 0; padding: 16px 28px; }
-  .roles { grid-template-columns: 1fr 1fr; gap: 18px; }
-  .chip { white-space: nowrap; }
-  .metas { display: flex; flex-wrap: wrap; gap: 4px 22px; margin-top: 10px; }
-  .metas .meta { margin-top: 0; }
-  /* 横屏：3000 宽，5 列，汇总卡并入标题行 */
-  body.landscape .header { flex-wrap: nowrap; gap: 32px; }
-  body.landscape .header h1 { flex-shrink: 0; }
-  body.landscape .header .summary { order: 0; flex: 1 1 auto; }
-  body.landscape .roles { grid-template-columns: repeat(4, 1fr); gap: 40px; }
-  body.landscape .role { padding: 30px 32px 28px 30px; }
-  body.landscape .skills { line-height: 1.65; margin-top: 16px; padding-top: 16px; }
-  body.landscape .chips { margin-top: 14px; gap: 10px; }
-  body.landscape .metas { margin-top: 16px; gap: 6px 28px; }
-  body.landscape .role .role-team { margin-top: 10px; }
-  body.landscape .header { margin-bottom: 36px; }
-  body.landscape .celebrate-block, body.landscape .interviews-block { margin-bottom: 40px; }
-  body.landscape .interviews { gap: 24px; }
-  body.landscape .section-head { margin-bottom: 16px; }
-  /* 竖屏字号：重点技能 = 项目经理 = 28px */
-  body:not(.landscape) .role { padding: 24px 26px 22px 24px; }
-  body:not(.landscape) .role .role-title { font-size: 40px; }
-  body:not(.landscape) .seq { font-size: 22px; }
-  body:not(.landscape) .badge { font-size: 19px; }
-  body:not(.landscape) .role .role-team { font-size: 28px; font-weight: 600; color: #0071e3; }
-  body:not(.landscape) .skills { font-size: 28px; font-weight: 500; color: #1d1d1f; line-height: 1.55; }
-  body:not(.landscape) .chip { font-size: 24px; color: #1d1d1f; }
-  body:not(.landscape) .meta { font-size: 24px; color: #1d1d1f; font-weight: 600; }
-  body:not(.landscape) .roles { gap: 24px; }
-  body:not(.landscape) .wrap { max-width: 2028px; }
-  /* 横屏字号：重点技能 = 项目经理 = 30px */
-  body.landscape .role .role-title { font-size: 44px; }
-  body.landscape .seq { font-size: 24px; }
-  body.landscape .badge { font-size: 21px; padding: 4px 14px; }
-  body.landscape .role .role-team { font-size: 30px; font-weight: 600; color: #0071e3; }
-  body.landscape .skills { font-size: 30px; font-weight: 500; color: #1d1d1f; line-height: 1.6; }
-  body.landscape .chip { font-size: 26px; padding: 7px 18px; color: #1d1d1f; }
-  body.landscape .meta { font-size: 26px; color: #1d1d1f; font-weight: 600; }
-  body.landscape .red { font-weight: 700; }
-  body.landscape .chips { flex-wrap: nowrap; overflow: hidden; }
+  .gx-groups { display: flex; flex-direction: column; gap: 18px; }
+  .gx-group {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(0,0,0,.04);
+    border-left: 6px solid #d2d2d7;
+    overflow: hidden;
+  }
+  .gx-group.hl { border-left-color: #ffd60a; }
+  .gx-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 22px;
+    padding: 18px 22px 14px;
+    flex-wrap: wrap;
+  }
+  .gx-namewrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .gx-name {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: #000;
+  }
+  .gx-group.hl .gx-name {
+    background: #ffe14a;
+    border-radius: 10px;
+    padding: 2px 12px;
+  }
+  .gx-role-note { font-size: 20px; font-weight: 700; color: #1d1d1f; }
+  .gx-pieces {
+    background: #f5f5f7;
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #6e6e73;
+  }
+  .gx-team { margin-top: 8px; font-size: 18px; font-weight: 700; color: #0071e3; }
+  .gx-team i { font-style: normal; color: #86868b; font-weight: 700; margin-right: 6px; font-size: 14px; }
+  .gx-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+  .gx-metric {
+    background: #f5f5f7;
+    border-radius: 16px;
+    padding: 8px 14px 7px;
+    text-align: center;
+    min-width: 108px;
+  }
+  .gx-metric b { display: block; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; word-break: break-word; }
+  .gx-metric span { font-size: 13px; font-weight: 700; color: #6e6e73; }
+  .gx-metric.target { background: #fff1f0; }
+  .gx-metric.target b { font-size: 36px; color: #ff3b30; }
+  .gx-metric.target span { color: #ff3b30; }
+  .gx-lines { display: grid; gap: 12px; padding: 0 16px 16px; }
+  .gx-line {
+    background: #fbfbfd;
+    border-radius: 16px;
+    padding: 14px 16px 14px;
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 12px;
+    min-width: 0;
+  }
+  .gx-line.hot {
+    background: #fff6f5;
+    box-shadow: inset 4px 0 0 #ff3b30;
+  }
+  .gx-idx {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1d1d1f;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  }
+  .gx-line.hot .gx-idx { background: #ff3b30; color: #fff; }
+  .k { display: block; font-size: 13px; font-weight: 700; color: #86868b; margin-bottom: 4px; }
+  .gx-who .v { font-size: 24px; font-weight: 700; color: #0071e3; line-height: 1.35; word-break: break-word; }
+  .gx-who .red { color: #ff3b30; }
+  .gx-skills { margin-top: 12px; font-size: 22px; font-weight: 600; color: #1d1d1f; line-height: 1.55; word-break: break-word; }
+  .gx-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1d1d1f;
+    line-height: 1.4;
+    max-width: 100%;
+  }
+  .gx-line.hot .chip { background: #fff; }
+  .chip i { font-style: normal; color: #86868b; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .muted { color: #aeaeb2; font-weight: 600; }
+  .gx-empty {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 28px 22px;
+    text-align: center;
+    color: #6e6e73;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  body.landscape .gx-lines { grid-template-columns: 1fr 1fr; }
+  body.landscape .gx-lines > .gx-line:only-child { grid-column: 1 / -1; }
+  body.landscape .gx-name { font-size: 44px; }
+  body.landscape .gx-skills { font-size: 22px; }
+  body.landscape .summary-title { font-size: 28px; }
 </style>
 </head>
 <body>
   <div class="wrap" id="board">
     <div class="header">
       <h1 id="board-title">招聘看板</h1>
-      <div class="summary" id="summary">
-      <div class="summary-title" id="sum-title"></div>
-      <div class="summary-stats">
-        <div class="stat"><b id="sum-roles">0</b><span>在招岗位</span></div>
-        <div class="stat red"><b id="sum-target">0</b><span>当日简历目标</span></div>
-      </div>
-    </div>
       <div class="header-date" id="board-date">—</div>
     </div>
+    <section class="summary">
+      <div>
+        <div class="summary-title" id="sum-title"></div>
+        <div class="summary-legend">黄底是岗位名；红字是原表里的紧急或强调</div>
+      </div>
+      <div class="summary-stats">
+        <div class="stat"><b id="sum-roles">0</b><span>岗位</span></div>
+        <div class="stat hot"><b id="sum-target">0</b><span>当日招聘目标</span></div>
+        <div class="stat"><b id="sum-lines">0</b><span>需求明细</span></div>
+        <div class="stat" id="sum-hot-wrap"><b id="sum-hot">0</b><span>含标红</span></div>
+      </div>
+    </section>
+
     <section class="celebrate-block" id="cele-block" hidden>
       <div class="section-head">
         <h2>今日入职 ✨</h2>
@@ -122,53 +197,67 @@
     </section>
 
     <section class="roles-block">
-      <div class="section-head"><h2>重点岗位</h2><span class="hint" id="role-hint">0 岗</span></div>
-      <div class="roles" id="role-list"></div>
+      <div class="section-head"><h2>重点需求</h2><span class="hint" id="role-hint">0 岗</span></div>
+      <div class="gx-groups" id="group-list"></div>
     </section>
     <footer>数据来自招聘需求表</footer>
   </div>
-<script src="board-shared.js?v=20261020-0920"></script>
+<script src="board-shared.js?v=20261127-0940"></script>
 <script>
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function rich(s){return esc(s).replace(/\*\*([\s\S]+?)\*\*/g,'<span class="red">$1</span>').replace(/\n/g,'<br>');}
   function plain(s){return String(s||'').replace(/\*\*/g,'');}
-  function badges(note){
-    return plain(note).replace(/[()（）]/g,' ').split(/[，,、；;\s]+/).filter(Boolean)
-      .map(function(b){return '<span class="badge'+(/面试/.test(b)?' blue':'')+'">'+esc(b)+'</span>';}).join('');
-  }
   function num(s){var m=plain(s).match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):0;}
+  function rowHot(r){return /\*\*/.test([r&&r.skills,r&&r.interview,r&&r.address,r&&r.pm].join('\n'));}
   function renderBoard(data){
     data=data||{}; var g=data.guoxin||{};
-    var groups=(Array.isArray(g.groups)?g.groups:[]).filter(function(x){return x&&(x.role||(x.rows||[]).some(function(r){return r.skills||r.pm;}));});
+    var groups=(Array.isArray(g.groups)?g.groups:[]).filter(function(x){return x&&(x.role||x.team||x.target||(x.rows||[]).some(function(r){return r&&(r.skills||r.pm||r.interview||r.address);}));});
     document.getElementById('board-title').textContent=(data.client||'')+'招聘看板';
     document.getElementById('board-date').textContent=data.date||'—';
     document.title=(data.client||'')+'招聘看板 · '+(data.date||'');
-    document.getElementById('sum-title').innerHTML=rich(g.title||'当日需求重点');
+    var title=g.title||'当日需求重点(活跃岗位)-重点看“紧急状态”';
+    document.getElementById('sum-title').innerHTML=rich(title).replace(/紧急状态/g,'<span class="red">紧急状态</span>');
+    var lines=0, hot=0;
+    groups.forEach(function(x){
+      var rows=(x.rows&&x.rows.length)?x.rows:[{}];
+      lines+=rows.length;
+      rows.forEach(function(r){ if(rowHot(r)) hot++; });
+    });
     document.getElementById('sum-roles').textContent=groups.length;
     var tot=groups.reduce(function(a,x){return a+num(x.target);},0);
     document.getElementById('sum-target').textContent=Math.round(tot*10)/10;
+    document.getElementById('sum-lines').textContent=lines;
+    document.getElementById('sum-hot').textContent=hot;
+    document.getElementById('sum-hot-wrap').classList.toggle('hot', hot>0);
     BoardShared.applyOrientation(data);
     BoardShared.renderCelebrate(data);
     BoardShared.renderInterviews(BoardShared.filterInterviews(data));
-    // cards: one per sub-row
-    var cards=[];
-    groups.forEach(function(x){var rows=(x.rows&&x.rows.length)?x.rows:[{}];
-      rows.forEach(function(r,i){
-        var title=esc(x.role||'')+(rows.length>1?'<span class="seq">'+(i+1)+'/'+rows.length+'</span>':'')+badges(x.roleNote);
-        var chips='';
-        if(x.target)chips+='<span class="chip target">简历目标 '+esc(plain(x.target))+(rows.length>1?'（合计）':'')+'</span>';
-        if(x.salary)chips+='<span class="chip">'+esc(plain(x.salary))+'</span>';
-        if(x.years)chips+='<span class="chip">'+esc(plain(x.years))+'</span>';
-        if(x.team)chips+='<span class="chip">'+esc(plain(x.team))+'</span>';
-        cards.push('<article class="role'+(x.highlight?' hl':'')+'"><div class="role-title">'+title+'</div>'+
-          (r.pm?'<div class="role-team">'+rich(r.pm)+'</div>':'')+
-          (chips?'<div class="chips">'+chips+'</div>':'')+
-          '<div class="skills">'+(r.skills?rich(r.skills):'&nbsp;')+'</div>'+
-          ((r.interview||r.address)?'<div class="metas">'+(r.interview?'<div class="meta"><i>面试</i>'+rich(r.interview)+'</div>':'')+
-          (r.address?'<div class="meta"><i>地址</i>'+rich(r.address)+'</div>':'')+'</div>':'')+'</article>');
-      });});
-    document.getElementById('role-hint').textContent=groups.length+' 岗 · '+cards.length+' 个需求';
-    document.getElementById('role-list').innerHTML=cards.length?cards.join(''):'<div class="empty-hint" style="grid-column:1/-1">暂无岗位，在左侧添加</div>';
+    var html=groups.map(function(x){
+      var rows=(x.rows&&x.rows.length)?x.rows:[{}];
+      var hl=x.highlight!==false;
+      var note=plain(x.roleNote).trim()?('<span class="gx-role-note">'+rich(x.roleNote)+'</span>'):'';
+      var team=plain(x.team).trim()?('<div class="gx-team"><i>项目组</i>'+rich(x.team)+'</div>'):'';
+      var metrics='';
+      metrics+='<div class="gx-metric target"><b>'+(plain(x.target).trim()?esc(plain(x.target)):'—')+'</b><span>当日招聘目标</span></div>';
+      metrics+='<div class="gx-metric"><b>'+(plain(x.salary).trim()?esc(plain(x.salary)):'—')+'</b><span>薪资</span></div>';
+      metrics+='<div class="gx-metric"><b>'+(plain(x.years).trim()?esc(plain(x.years)):'—')+'</b><span>年限</span></div>';
+      var body=rows.map(function(r,i){
+        var who=r.pm?rich(r.pm):'<span class="muted">—</span>';
+        var skills=r.skills?rich(r.skills):'<span class="muted">未填</span>';
+        var iv=r.interview?rich(r.interview):'<span class="muted">—</span>';
+        var addr=r.address?rich(r.address):'<span class="muted">—</span>';
+        return '<article class="gx-line'+(rowHot(r)?' hot':'')+'">'
+          +'<div class="gx-idx">'+(i+1)+'</div>'
+          +'<div>'
+          +'<div class="gx-who"><span class="k">备注</span><div class="v">'+who+'</div></div>'
+          +'<div class="gx-skills"><span class="k">重点描述</span>'+skills+'</div>'
+          +'<div class="gx-meta"><span class="chip"><i>面试方式</i><span>'+iv+'</span></span><span class="chip"><i>详细地址</i><span>'+addr+'</span></span></div>'
+          +'</div></article>';
+      }).join('');
+      return '<article class="gx-group'+(hl?' hl':'')+'"><header class="gx-head"><div><div class="gx-namewrap"><span class="gx-name">'+rich(x.role||'未命名岗位')+'</span>'+note+'<span class="gx-pieces">'+rows.length+' 条</span></div>'+team+'</div><div class="gx-metrics">'+metrics+'</div></header><div class="gx-lines">'+body+'</div></article>';
+    }).join('');
+    document.getElementById('role-hint').textContent=groups.length+' 岗 · '+lines+' 条';
+    document.getElementById('group-list').innerHTML=html||'<div class="gx-empty">暂无岗位，在左侧添加</div>';
   }
   window.renderBoard=renderBoard;
   window.addEventListener('message',function(ev){if(ev.data&&ev.data.type==='BOARD_DATA')renderBoard(ev.data.payload);});

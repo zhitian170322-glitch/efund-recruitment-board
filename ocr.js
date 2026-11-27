@@ -220,6 +220,10 @@ async function callDeepSeekVision({ apiKey, baseUrl, model, dataUrls, hasRoles, 
     const gx = normalizeGuoxin(parsed);
     return { date: typeof parsed.date === 'string' ? parsed.date.trim() : '', title: typeof parsed.title === 'string' ? parsed.title.trim() : '', groups: gx.groups };
   }
+  if (templateType === 'penghua') {
+    const ph = normalizePenghua(parsed.penghua || parsed);
+    return { date: typeof parsed.date === 'string' ? parsed.date.trim() : '', roles: ph.roles };
+  }
   return normalizeParsed(parsed);
 }
 

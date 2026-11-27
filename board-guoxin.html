@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261127-0940">
+<link rel="stylesheet" href="board-shared.css?v=20261127-0230">
 <style>
   .wrap { max-width: none; }
   .summary {
@@ -13,143 +13,131 @@
     justify-content: space-between;
     gap: 24px;
     background: #fff;
-    border-radius: 24px;
+    border-radius: 28px;
     box-shadow: var(--shadow);
-    padding: 18px 22px;
-    margin-bottom: 22px;
+    padding: 22px 26px;
+    margin-bottom: 26px;
   }
-  .summary-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.35; }
-  .summary-legend { margin-top: 6px; font-size: 15px; font-weight: 600; color: #6e6e73; }
-  .summary-stats { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-  .stat { background: #f5f5f7; border-radius: 16px; padding: 8px 16px; text-align: center; min-width: 112px; }
-  .stat b { display: block; font-size: 36px; line-height: 1.05; letter-spacing: -0.03em; }
-  .stat span { font-size: 14px; font-weight: 700; color: #6e6e73; }
+  .summary-title { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.3; }
+  .summary-legend { margin-top: 8px; font-size: 20px; font-weight: 600; color: #6e6e73; }
+  .summary-stats { display: flex; gap: 12px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .stat { background: #f5f5f7; border-radius: 18px; padding: 10px 18px; text-align: center; min-width: 124px; }
+  .stat b { display: block; font-size: 48px; line-height: 1.02; letter-spacing: -0.04em; }
+  .stat span { font-size: 18px; font-weight: 700; color: #6e6e73; }
   .stat.hot { background: #fff1f0; }
   .stat.hot b, .stat.hot span { color: #ff3b30; }
   .red { color: #ff3b30; font-weight: 700; }
 
-  .roles-block > .section-head h2 { color: #1d1d1f; }
-  .roles-block > .section-head .hint { color: #6e6e73; }
+  .roles-block > .section-head h2 { color: #1d1d1f; font-size: 42px; }
+  .roles-block > .section-head .hint { color: #6e6e73; font-size: 22px; }
 
-  .gx-groups { display: flex; flex-direction: column; gap: 18px; }
-  .gx-group {
-    background: #fff;
-    border-radius: 24px;
-    box-shadow: var(--shadow);
-    border: 1px solid rgba(0,0,0,.04);
-    border-left: 6px solid #d2d2d7;
-    overflow: hidden;
-  }
-  .gx-group.hl { border-left-color: #ffd60a; }
+  .gx-groups { display: flex; flex-direction: column; gap: 28px; }
   .gx-head {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 16px 22px;
-    padding: 18px 22px 14px;
+    gap: 18px 24px;
     flex-wrap: wrap;
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    border-top: 10px solid #d8d8de;
+    padding: 24px 28px 22px;
+    margin-bottom: 16px;
   }
-  .gx-namewrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .gx-group.hl .gx-head { border-top-color: #ffd60a; }
+  .gx-namewrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
   .gx-name {
-    font-size: 40px;
+    font-size: 60px;
     font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
     color: #000;
   }
   .gx-group.hl .gx-name {
     background: #ffe14a;
-    border-radius: 10px;
-    padding: 2px 12px;
+    border-radius: 14px;
+    padding: 2px 14px 6px;
   }
-  .gx-role-note { font-size: 20px; font-weight: 700; color: #1d1d1f; }
+  .gx-role-note { font-size: 28px; font-weight: 700; color: #1d1d1f; }
   .gx-pieces {
     background: #f5f5f7;
     border-radius: 100px;
-    padding: 4px 12px;
-    font-size: 15px;
+    padding: 8px 16px;
+    font-size: 20px;
     font-weight: 700;
     color: #6e6e73;
   }
-  .gx-team { margin-top: 8px; font-size: 18px; font-weight: 700; color: #0071e3; }
-  .gx-team i { font-style: normal; color: #86868b; font-weight: 700; margin-right: 6px; font-size: 14px; }
-  .gx-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+  .gx-team { margin-top: 10px; font-size: 26px; font-weight: 700; color: #0071e3; }
+  .gx-team i { font-style: normal; color: #86868b; font-weight: 700; margin-right: 8px; font-size: 18px; }
+  .gx-metrics { display: flex; gap: 10px; flex-wrap: wrap; }
   .gx-metric {
     background: #f5f5f7;
-    border-radius: 16px;
-    padding: 8px 14px 7px;
+    border-radius: 18px;
+    padding: 10px 16px 8px;
     text-align: center;
-    min-width: 108px;
+    min-width: 120px;
   }
-  .gx-metric b { display: block; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; word-break: break-word; }
-  .gx-metric span { font-size: 13px; font-weight: 700; color: #6e6e73; }
+  .gx-metric b { display: block; font-size: 32px; line-height: 1.15; letter-spacing: -0.03em; word-break: break-word; }
+  .gx-metric span { font-size: 16px; font-weight: 700; color: #6e6e73; }
   .gx-metric.target { background: #fff1f0; }
-  .gx-metric.target b { font-size: 36px; color: #ff3b30; }
+  .gx-metric.target b { font-size: 44px; color: #ff3b30; }
   .gx-metric.target span { color: #ff3b30; }
-  .gx-lines { display: grid; gap: 12px; padding: 0 16px 16px; }
-  .gx-line {
-    background: #fbfbfd;
-    border-radius: 16px;
-    padding: 14px 16px 14px;
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    gap: 12px;
-    min-width: 0;
-  }
-  .gx-line.hot {
-    background: #fff6f5;
-    box-shadow: inset 4px 0 0 #ff3b30;
-  }
-  .gx-idx {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    font-weight: 700;
-    color: #1d1d1f;
-    box-shadow: 0 1px 2px rgba(0,0,0,.06);
-  }
-  .gx-line.hot .gx-idx { background: #ff3b30; color: #fff; }
-  .k { display: block; font-size: 13px; font-weight: 700; color: #86868b; margin-bottom: 4px; }
-  .gx-who .v { font-size: 24px; font-weight: 700; color: #0071e3; line-height: 1.35; word-break: break-word; }
-  .gx-who .red { color: #ff3b30; }
-  .gx-skills { margin-top: 12px; font-size: 22px; font-weight: 600; color: #1d1d1f; line-height: 1.55; word-break: break-word; }
-  .gx-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .chip {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 8px;
-    background: #fff;
-    border-radius: 12px;
-    padding: 8px 12px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #1d1d1f;
-    line-height: 1.4;
-    max-width: 100%;
-  }
-  .gx-line.hot .chip { background: #fff; }
-  .chip i { font-style: normal; color: #86868b; font-size: 13px; font-weight: 700; flex-shrink: 0; }
-  .muted { color: #aeaeb2; font-weight: 600; }
-  .gx-empty {
+  .gx-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: stretch; }
+  .gx-card {
     background: #fff;
     border-radius: 24px;
     box-shadow: var(--shadow);
-    padding: 28px 22px;
+    border-top: 8px solid #e4e4ea;
+    padding: 22px 24px 20px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .gx-card.hot {
+    border-top-color: #ff3b30;
+    background: linear-gradient(180deg, #fff 0%, #fff5f4 100%);
+    box-shadow: 0 10px 28px rgba(255,59,48,.10);
+  }
+  .gx-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .k { display: block; font-size: 18px; font-weight: 700; color: #86868b; margin-bottom: 4px; }
+  .gx-who .v { font-size: 36px; font-weight: 700; color: #0071e3; line-height: 1.3; word-break: break-word; }
+  .gx-who .red { color: #ff3b30; }
+  .gx-idx {
+    flex-shrink: 0;
+    min-width: 64px;
+    height: 48px;
+    padding: 0 12px;
+    border-radius: 14px;
+    background: #f5f5f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1d1d1f;
+  }
+  .gx-card.hot .gx-idx { background: #ff3b30; color: #fff; }
+  .gx-skills { font-size: 30px; font-weight: 600; color: #1d1d1f; line-height: 1.5; word-break: break-word; }
+  .gx-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto; }
+  .gx-box { background: #f5f5f7; border-radius: 16px; padding: 12px 14px; min-width: 0; }
+  .gx-card.hot .gx-box { background: rgba(255,255,255,.72); }
+  .gx-box .v { font-size: 24px; font-weight: 700; color: #1d1d1f; line-height: 1.4; word-break: break-word; }
+  .muted { color: #aeaeb2; font-weight: 600; }
+  .gx-empty {
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    padding: 48px 28px;
     text-align: center;
     color: #6e6e73;
-    font-size: 20px;
+    font-size: 28px;
     font-weight: 600;
   }
-  body.landscape .gx-lines { grid-template-columns: 1fr 1fr; }
-  body.landscape .gx-lines > .gx-line:only-child { grid-column: 1 / -1; }
-  body.landscape .gx-name { font-size: 44px; }
-  body.landscape .gx-skills { font-size: 22px; }
-  body.landscape .summary-title { font-size: 28px; }
+  body.landscape .gx-cards { grid-template-columns: 1fr 1fr 1fr; }
+  body.landscape .gx-name { font-size: 64px; }
+  body.landscape .gx-skills { font-size: 30px; }
 </style>
 </head>
 <body>
@@ -161,7 +149,7 @@
     <section class="summary">
       <div>
         <div class="summary-title" id="sum-title"></div>
-        <div class="summary-legend">黄底是岗位名；红字是原表里的紧急或强调</div>
+        <div class="summary-legend">黄底是岗位名；红字、红顶卡片是紧急或强调</div>
       </div>
       <div class="summary-stats">
         <div class="stat"><b id="sum-roles">0</b><span>岗位</span></div>
@@ -188,27 +176,28 @@
       </article>
     </section>
 
-    <section class="interviews-block">
+    <section class="roles-block">
+      <div class="section-head"><h2>重点需求</h2><span class="hint" id="role-hint">0 岗</span></div>
+      <div class="gx-groups" id="group-list"></div>
+    </section>
+
+    <section class="interviews-block" id="iv-block" hidden>
       <div class="section-head">
         <h2>今日面试跟进</h2>
         <span class="hint" id="iv-hint">0 人</span>
       </div>
       <div class="interviews" id="iv-list"></div>
     </section>
-
-    <section class="roles-block">
-      <div class="section-head"><h2>重点需求</h2><span class="hint" id="role-hint">0 岗</span></div>
-      <div class="gx-groups" id="group-list"></div>
-    </section>
     <footer>数据来自招聘需求表</footer>
   </div>
-<script src="board-shared.js?v=20261127-0940"></script>
+<script src="board-shared.js?v=20261127-0230"></script>
 <script>
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function rich(s){return esc(s).replace(/\*\*([\s\S]+?)\*\*/g,'<span class="red">$1</span>').replace(/\n/g,'<br>');}
   function plain(s){return String(s||'').replace(/\*\*/g,'');}
   function num(s){var m=plain(s).match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):0;}
   function rowHot(r){return /\*\*/.test([r&&r.skills,r&&r.interview,r&&r.address,r&&r.pm].join('\n'));}
+  function showOr(html){return html || '<span class="muted">—</span>';}
   function renderBoard(data){
     data=data||{}; var g=data.guoxin||{};
     var groups=(Array.isArray(g.groups)?g.groups:[]).filter(function(x){return x&&(x.role||x.team||x.target||(x.rows||[]).some(function(r){return r&&(r.skills||r.pm||r.interview||r.address);}));});
@@ -231,30 +220,30 @@
     document.getElementById('sum-hot-wrap').classList.toggle('hot', hot>0);
     BoardShared.applyOrientation(data);
     BoardShared.renderCelebrate(data);
-    BoardShared.renderInterviews(BoardShared.filterInterviews(data));
+    var ivs=BoardShared.filterInterviews(data);
+    var ivBlock=document.getElementById('iv-block');
+    if(ivBlock) ivBlock.hidden=!ivs.length;
+    if(ivs.length) BoardShared.renderInterviews(ivs);
     var html=groups.map(function(x){
       var rows=(x.rows&&x.rows.length)?x.rows:[{}];
       var hl=x.highlight!==false;
       var note=plain(x.roleNote).trim()?('<span class="gx-role-note">'+rich(x.roleNote)+'</span>'):'';
       var team=plain(x.team).trim()?('<div class="gx-team"><i>项目组</i>'+rich(x.team)+'</div>'):'';
-      var metrics='';
-      metrics+='<div class="gx-metric target"><b>'+(plain(x.target).trim()?esc(plain(x.target)):'—')+'</b><span>当日招聘目标</span></div>';
-      metrics+='<div class="gx-metric"><b>'+(plain(x.salary).trim()?esc(plain(x.salary)):'—')+'</b><span>薪资</span></div>';
-      metrics+='<div class="gx-metric"><b>'+(plain(x.years).trim()?esc(plain(x.years)):'—')+'</b><span>年限</span></div>';
-      var body=rows.map(function(r,i){
-        var who=r.pm?rich(r.pm):'<span class="muted">—</span>';
-        var skills=r.skills?rich(r.skills):'<span class="muted">未填</span>';
-        var iv=r.interview?rich(r.interview):'<span class="muted">—</span>';
-        var addr=r.address?rich(r.address):'<span class="muted">—</span>';
-        return '<article class="gx-line'+(rowHot(r)?' hot':'')+'">'
-          +'<div class="gx-idx">'+(i+1)+'</div>'
-          +'<div>'
-          +'<div class="gx-who"><span class="k">备注</span><div class="v">'+who+'</div></div>'
-          +'<div class="gx-skills"><span class="k">重点描述</span>'+skills+'</div>'
-          +'<div class="gx-meta"><span class="chip"><i>面试方式</i><span>'+iv+'</span></span><span class="chip"><i>详细地址</i><span>'+addr+'</span></span></div>'
+      var metrics=''
+        +'<div class="gx-metric target"><b>'+(plain(x.target).trim()?esc(plain(x.target)):'—')+'</b><span>当日招聘目标</span></div>'
+        +'<div class="gx-metric"><b>'+(plain(x.salary).trim()?esc(plain(x.salary)):'—')+'</b><span>薪资</span></div>'
+        +'<div class="gx-metric"><b>'+(plain(x.years).trim()?esc(plain(x.years)):'—')+'</b><span>年限</span></div>';
+      var cards=rows.map(function(r,i){
+        return '<article class="gx-card'+(rowHot(r)?' hot':'')+'">'
+          +'<div class="gx-card-top"><div class="gx-who"><span class="k">备注</span><div class="v">'+showOr(r.pm?rich(r.pm):'')+'</div></div>'
+          +'<div class="gx-idx">'+(rows.length>1?(i+1)+'/'+rows.length:String(i+1))+'</div></div>'
+          +'<div class="gx-skills"><span class="k">重点描述</span>'+showOr(r.skills?rich(r.skills):'')+'</div>'
+          +'<div class="gx-pair">'
+          +'<div class="gx-box"><span class="k">面试方式</span><div class="v">'+showOr(r.interview?rich(r.interview):'')+'</div></div>'
+          +'<div class="gx-box"><span class="k">详细地址</span><div class="v">'+showOr(r.address?rich(r.address):'')+'</div></div>'
           +'</div></article>';
       }).join('');
-      return '<article class="gx-group'+(hl?' hl':'')+'"><header class="gx-head"><div><div class="gx-namewrap"><span class="gx-name">'+rich(x.role||'未命名岗位')+'</span>'+note+'<span class="gx-pieces">'+rows.length+' 条</span></div>'+team+'</div><div class="gx-metrics">'+metrics+'</div></header><div class="gx-lines">'+body+'</div></article>';
+      return '<section class="gx-group'+(hl?' hl':'')+'"><header class="gx-head"><div><div class="gx-namewrap"><span class="gx-name">'+rich(x.role||'未命名岗位')+'</span>'+note+'<span class="gx-pieces">'+rows.length+' 条</span></div>'+team+'</div><div class="gx-metrics">'+metrics+'</div></header><div class="gx-cards">'+cards+'</div></section>';
     }).join('');
     document.getElementById('role-hint').textContent=groups.length+' 岗 · '+lines+' 条';
     document.getElementById('group-list').innerHTML=html||'<div class="gx-empty">暂无岗位，在左侧添加</div>';

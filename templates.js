@@ -144,8 +144,8 @@ const BoardTemplates = {
   guoxin: {
     label: '国信看板（当日需求重点表）',
     boardSrc: 'board-guoxin.html',
-    boardWidth: 1680,
-    boardWidthLandscape: 2800,
+    boardWidth: 1560,
+    boardWidthLandscape: 2400,
     defaultOrientation: 'portrait',
     formSelector: '#form-guoxin',
     ocrUploads: { a: '国信需求表截图', b: null },
@@ -171,8 +171,8 @@ const BoardTemplates = {
   penghua: {
     label: '鹏华看板（岗位需求表）',
     boardSrc: 'board-penghua.html',
-    boardWidth: 1560,
-    boardWidthLandscape: 2400,
+    boardWidth: 1480,
+    boardWidthLandscape: 2200,
     defaultOrientation: 'portrait',
     formSelector: '#form-penghua',
     ocrUploads: { a: '鹏华岗位表截图', b: null },

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>招聘看板</title>
-<link rel="stylesheet" href="board-shared.css?v=20261127-0940">
+<link rel="stylesheet" href="board-shared.css?v=20261127-0230">
 <style>
   .wrap { max-width: none; }
   .summary {
@@ -13,101 +13,136 @@
     justify-content: space-between;
     gap: 24px;
     background: #fff;
-    border-radius: 24px;
+    border-radius: 28px;
     box-shadow: var(--shadow);
-    padding: 18px 22px 16px;
-    margin-bottom: 22px;
+    padding: 22px 26px;
+    margin-bottom: 26px;
   }
-  .summary-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.3; }
-  .summary-sub { margin-top: 4px; font-size: 16px; font-weight: 600; color: #6e6e73; }
-  .summary-stats { display: flex; gap: 10px; flex-shrink: 0; }
-  .stat { background: #f5f5f7; border-radius: 16px; padding: 8px 18px 8px; text-align: center; min-width: 118px; }
-  .stat b { display: block; font-size: 40px; line-height: 1.05; letter-spacing: -0.03em; }
-  .stat span { display: block; font-size: 15px; font-weight: 700; color: #6e6e73; }
-  .stat em { display: block; font-style: normal; font-size: 13px; font-weight: 700; color: #86868b; min-height: 1.2em; }
+  .summary-title { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; }
+  .summary-sub { margin-top: 6px; font-size: 20px; font-weight: 600; color: #6e6e73; }
+  .summary-stats { display: flex; gap: 12px; flex-shrink: 0; }
+  .stat { background: #f5f5f7; border-radius: 18px; padding: 10px 20px; text-align: center; min-width: 132px; }
+  .stat b { display: block; font-size: 52px; line-height: 1.02; letter-spacing: -0.04em; }
+  .stat span { display: block; font-size: 18px; font-weight: 700; color: #6e6e73; }
+  .stat em { display: block; font-style: normal; font-size: 16px; font-weight: 700; color: #86868b; min-height: 1.2em; }
   .stat.hot { background: #fff1f0; }
   .stat.hot b, .stat.hot span, .stat.hot em { color: #ff3b30; }
 
-  .roles-block > .section-head h2 { color: #1d1d1f; }
-  .roles-block > .section-head .hint { color: #6e6e73; }
+  .roles-block { margin-bottom: 26px; }
+  .roles-block > .section-head h2 { color: #1d1d1f; font-size: 42px; }
+  .roles-block > .section-head .hint { color: #6e6e73; font-size: 22px; }
   .roles-block > .section-head .hint .hot { color: #ff3b30; font-weight: 700; }
 
-  .ph-panel {
-    background: #fff;
-    border-radius: 24px;
-    box-shadow: var(--shadow);
-    border: 1px solid rgba(0,0,0,.04);
-    overflow: hidden;
-  }
-  .ph-head, .ph-row {
+  .ph-grid {
     display: grid;
-    grid-template-columns: minmax(200px, 1.4fr) 96px 132px minmax(96px, .9fr) 72px minmax(120px, 1fr) minmax(168px, 1.15fr);
-    gap: 8px 14px;
-    align-items: center;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    align-items: stretch;
   }
-  .ph-head {
-    padding: 14px 20px 10px;
-    font-size: 14px;
+  .ph-card {
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(0,0,0,.05);
+    border-top: 10px solid #d8d8de;
+    padding: 26px 26px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+    min-height: 340px;
+  }
+  .ph-card.urgent {
+    border-top-color: #ff3b30;
+    background: linear-gradient(180deg, #fff 0%, #fff4f3 100%);
+    box-shadow: 0 1px 2px rgba(255,59,48,.08), 0 14px 32px rgba(255,59,48,.12);
+  }
+  .ph-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .ph-title {
+    font-size: 52px;
     font-weight: 700;
-    color: #86868b;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+    color: #000;
+    word-break: break-word;
   }
-  .ph-row {
-    padding: 14px 20px;
-    border-top: 1px solid #efeff4;
-  }
-  .ph-row.urgent {
-    background: #fff5f5;
-    box-shadow: inset 6px 0 0 #ff3b30;
-  }
-  .ph-row.calm .pill.urg { background: #f2f2f7; color: #8e8e93; }
-  .ph-name { min-width: 0; }
-  .ph-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; color: #000; word-break: break-word; }
-  .ph-project { margin-top: 2px; font-size: 16px; font-weight: 700; color: #0071e3; line-height: 1.35; word-break: break-word; }
-  .ph-cell { min-width: 0; }
-  .ph-person { font-size: 22px; font-weight: 700; color: #1d1d1f; word-break: break-word; }
-  .ph-count { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; text-align: center; color: #000; }
-  .ph-salary { font-size: 18px; font-weight: 700; color: #1d1d1f; word-break: break-word; }
+  .ph-project { margin-top: 8px; font-size: 26px; font-weight: 700; color: #0071e3; line-height: 1.3; word-break: break-word; }
+  .ph-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
   .pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 28px;
-    padding: 3px 10px;
+    min-height: 42px;
+    padding: 6px 16px;
     border-radius: 100px;
-    font-size: 15px;
+    font-size: 22px;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15;
     white-space: nowrap;
   }
   .pill.st { background: #e8e8ed; color: #3a3a3c; }
   .pill.st.on { background: #34c759; color: #fff; }
-  .pill.urg.hot { background: #ff3b30; color: #fff; font-size: 16px; padding: 4px 12px; }
-  .pill.urg.calm { background: #f2f2f7; color: #8e8e93; }
-  .ph-badge { text-align: center; }
-  .deadline { font-size: 17px; font-weight: 700; line-height: 1.35; word-break: break-word; }
-  .deadline.has {
+  .pill.urg.hot { background: #ff3b30; color: #fff; font-size: 24px; padding: 8px 18px; }
+  .pill.urg.calm { background: #ececf1; color: #8e8e93; }
+  .ph-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fact {
+    background: #f5f5f7;
+    border-radius: 18px;
+    padding: 14px 16px 12px;
+    min-width: 0;
+  }
+  .ph-card.urgent .fact.count { background: #ffe8e6; }
+  .fact i {
+    display: block;
+    font-style: normal;
+    font-size: 18px;
+    font-weight: 700;
+    color: #6e6e73;
+    margin-bottom: 4px;
+  }
+  .fact b {
+    display: block;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: #000;
+    word-break: break-word;
+  }
+  .fact.count b { font-size: 44px; letter-spacing: -0.04em; line-height: 1.05; }
+  .ph-card.urgent .fact.count b { color: #ff3b30; }
+  .fact b.due {
     display: inline-block;
     background: #fff4e5;
     color: #9a5b00;
-    border-radius: 10px;
-    padding: 6px 10px;
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 26px;
   }
-  .deadline.empty { color: #c7c7cc; font-weight: 600; }
   .ph-note {
-    grid-column: 1 / -1;
-    margin-top: 2px;
-    padding-top: 8px;
-    border-top: 1px dashed #e4e4e9;
-    font-size: 17px;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid #ececf1;
+    font-size: 26px;
     font-weight: 600;
-    color: #1d1d1f;
     line-height: 1.45;
+    color: #1d1d1f;
   }
-  .ph-note i { font-style: normal; color: #86868b; font-weight: 700; margin-right: 8px; }
+  .ph-note i { display: block; font-style: normal; font-size: 18px; font-weight: 700; color: #86868b; margin-bottom: 4px; }
   .muted { color: #aeaeb2; font-weight: 600; }
-  .ph-empty { padding: 28px 22px; text-align: center; color: #6e6e73; font-size: 20px; font-weight: 600; }
-  body.landscape .ph-title { font-size: 30px; }
-  body.landscape .summary-title { font-size: 30px; }
+  .ph-empty {
+    grid-column: 1 / -1;
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    padding: 48px 28px;
+    text-align: center;
+    color: #6e6e73;
+    font-size: 28px;
+    font-weight: 600;
+  }
+  body.landscape .ph-grid { grid-template-columns: 1fr 1fr 1fr; }
+  body.landscape .ph-title { font-size: 48px; }
 </style>
 </head>
 <body>
@@ -146,7 +181,15 @@
       </article>
     </section>
 
-    <section class="interviews-block">
+    <section class="roles-block">
+      <div class="section-head">
+        <h2>岗位一览</h2>
+        <span class="hint" id="role-hint">0 岗</span>
+      </div>
+      <div class="ph-grid" id="role-list"></div>
+    </section>
+
+    <section class="interviews-block" id="iv-block" hidden>
       <div class="section-head">
         <h2>今日面试跟进</h2>
         <span class="hint" id="iv-hint">0 人</span>
@@ -154,16 +197,9 @@
       <div class="interviews" id="iv-list"></div>
     </section>
 
-    <section class="roles-block">
-      <div class="section-head">
-        <h2>岗位一览</h2>
-        <span class="hint" id="role-hint">0 岗</span>
-      </div>
-      <div class="ph-panel" id="role-list"></div>
-    </section>
     <footer>数据来自岗位需求表</footer>
   </div>
-  <script src="board-shared.js?v=20261127-0940"></script>
+  <script src="board-shared.js?v=20261127-0230"></script>
   <script>
     function esc(s) {
       return String(s == null ? '' : s)
@@ -178,9 +214,9 @@
       var m = String(s || '').replace(/,/g, '').match(/-?\d+(\.\d+)?/);
       return m ? parseFloat(m[0]) : 0;
     }
-    function fmt(n) {
-      var x = Math.round(n * 10) / 10;
-      return String(x);
+    function fmt(n) { return String(Math.round(n * 10) / 10); }
+    function val(s) {
+      return String(s || '').trim() ? esc(s) : '<span class="muted">—</span>';
     }
     function renderBoard(data) {
       data = data || {};
@@ -214,42 +250,42 @@
 
       BoardShared.applyOrientation(data);
       BoardShared.renderCelebrate(data);
-      BoardShared.renderInterviews(BoardShared.filterInterviews(data));
+      var ivs = BoardShared.filterInterviews(data);
+      var ivBlock = document.getElementById('iv-block');
+      if (ivBlock) ivBlock.hidden = !ivs.length;
+      if (ivs.length) BoardShared.renderInterviews(ivs);
 
-      var head = '<div class="ph-head"><div>岗位 / 项目</div><div>状态</div><div>紧急程度</div><div>面试官</div><div style="text-align:center">需求</div><div>薪资范围</div><div>截止时间</div></div>';
+      var list = document.getElementById('role-list');
       if (!roles.length) {
-        document.getElementById('role-list').innerHTML = '<div class="ph-empty">暂无岗位，在左侧添加</div>';
+        list.innerHTML = '<div class="ph-empty">暂无岗位，在左侧添加</div>';
         return;
       }
-      var rows = roles.map(function (r) {
+      list.innerHTML = roles.map(function (r) {
         var hot = isUrgent(r.urgency);
         var title = String(r.title || '').trim() ? esc(r.title) : '<span class="muted">未命名岗位</span>';
         var project = String(r.project || '').trim() ? '<div class="ph-project">' + esc(r.project) + '</div>' : '';
         var st = String(r.status || '').trim();
-        var stHtml = st ? '<span class="pill st' + (st === '开启' ? ' on' : '') + '">' + esc(st) + '</span>' : '<span class="muted">—</span>';
+        var stHtml = st ? '<span class="pill st' + (st === '开启' ? ' on' : '') + '">' + esc(st) + '</span>' : '';
         var urg = String(r.urgency || '一般');
         var urgHtml = '<span class="pill urg ' + (hot ? 'hot' : 'calm') + '">' + esc(urg) + '</span>';
-        var person = String(r.interviewer || '').trim() ? esc(r.interviewer) : '<span class="muted">—</span>';
-        var count = String(r.headcount || '').trim() ? esc(r.headcount) : '<span class="muted">—</span>';
-        var salary = String(r.salary || '').trim() ? esc(r.salary) : '<span class="muted">—</span>';
         var deadline = String(r.deadline || '').trim()
-          ? '<span class="deadline has">' + esc(r.deadline) + '</span>'
-          : '<span class="deadline empty">—</span>';
+          ? '<b class="due">' + esc(r.deadline) + '</b>'
+          : '<b><span class="muted">—</span></b>';
         var note = String(r.note || '').trim()
-          ? '<div class="ph-note"><i>备注</i><span>' + esc(r.note).replace(/\n/g, '<br>') + '</span></div>'
+          ? '<div class="ph-note"><i>备注</i>' + esc(r.note).replace(/\n/g, '<br>') + '</div>'
           : '';
-        return '<article class="ph-row ' + (hot ? 'urgent' : 'calm') + '">'
-          + '<div class="ph-name"><div class="ph-title">' + title + '</div>' + project + '</div>'
-          + '<div class="ph-badge">' + stHtml + '</div>'
-          + '<div class="ph-badge">' + urgHtml + '</div>'
-          + '<div class="ph-person">' + person + '</div>'
-          + '<div class="ph-count">' + count + '</div>'
-          + '<div class="ph-salary">' + salary + '</div>'
-          + '<div>' + deadline + '</div>'
+        return '<article class="ph-card ' + (hot ? 'urgent' : 'calm') + '">'
+          + '<div class="ph-card-top"><div><div class="ph-title">' + title + '</div>' + project + '</div>'
+          + '<div class="ph-badges">' + stHtml + urgHtml + '</div></div>'
+          + '<div class="ph-facts">'
+          + '<div class="fact"><i>面试官</i><b>' + val(r.interviewer) + '</b></div>'
+          + '<div class="fact count"><i>需求数</i><b>' + val(r.headcount) + '</b></div>'
+          + '<div class="fact"><i>薪资范围</i><b>' + val(r.salary) + '</b></div>'
+          + '<div class="fact"><i>截止时间</i>' + deadline + '</div>'
+          + '</div>'
           + note
           + '</article>';
       }).join('');
-      document.getElementById('role-list').innerHTML = head + rows;
     }
     window.renderBoard = renderBoard;
     window.addEventListener('message', function (ev) {

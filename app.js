@@ -676,17 +676,166 @@ function loadPenghuaSample() {
   setStatus('已载入鹏华看板示例');
 }
 
+function isRedField(el) {
+  if (!el || !el.matches || el.disabled || el.readOnly) return false;
+  const form = el.closest('#form-guoxin');
+  if (!form || form.hidden) return false;
+  if (el.id === 'gx-title') return true;
+  return el.matches(
+    'input[data-gf="role"], input[data-gf="team"], input[data-gf="roleNote"], textarea[data-f="skills"], textarea[data-f="interview"], textarea[data-f="address"], textarea[data-f="pm"]'
+  );
+}
+// Selection wholly inside one **...** span (the same pairs the board renders).
+function findRedSpan(value, start, end) {
+  if (start == null || end == null || end <= start) return null;
+  const re = /\*\*([\s\S]+?)\*\*/g;
+  let m;
+  while ((m = re.exec(value))) {
+    const outerStart = m.index;
+    const outerEnd = outerStart + m[0].length;
+    if (start >= outerStart && end <= outerEnd) {
+      return { outerStart, outerEnd, innerStart: outerStart + 2, innerEnd: outerEnd - 2 };
+    }
+  }
+  return null;
+}
+function applyRedToggle(el) {
+  if (!el || !document.body.contains(el)) return false;
+  const a = el.selectionStart, b = el.selectionEnd;
+  if (a == null || a === b) return false;
+  const v = el.value;
+  const span = findRedSpan(v, a, b);
+  let next, selStart, selEnd;
+  if (span) {
+    const inner = v.slice(span.innerStart, span.innerEnd);
+    next = v.slice(0, span.outerStart) + inner + v.slice(span.outerEnd);
+    selStart = span.outerStart;
+    selEnd = span.outerStart + inner.length;
+  } else {
+    const sel = v.slice(a, b);
+    next = v.slice(0, a) + '**' + sel + '**' + v.slice(b);
+    selStart = a + 2;
+    selEnd = a + 2 + sel.length;
+  }
+  el.value = next;
+  el.focus();
+  el.setSelectionRange(selStart, selEnd);
+  lastRichField = el;
+  syncFromFormAndPreview();
+  return true;
+}
 function markRedSelection() {
   const el = lastRichField;
+  if (!isRedField(el) && !(el && document.body.contains(el))) { setStatus('先点进一个文字框并选中要标红的文字', true); return; }
   if (!el || !document.body.contains(el)) { setStatus('先点进一个文字框并选中要标红的文字', true); return; }
   const a = el.selectionStart, b = el.selectionEnd;
   if (a == null || a === b) { setStatus('先选中要标红的文字', true); el.focus(); return; }
-  const v = el.value, sel = v.slice(a, b);
-  const wrapped = /^\*\*[\s\S]*\*\*$/.test(sel) ? sel.slice(2, -2) : `**${sel}**`;
-  el.value = v.slice(0, a) + wrapped + v.slice(b);
-  el.focus();
-  el.setSelectionRange(a, a + wrapped.length);
-  syncFromFormAndPreview();
+  if (!applyRedToggle(el)) setStatus('先选中要标红的文字', true);
+  else refreshRedPop();
+}
+function caretViewportPoint(el, index) {
+  const computed = getComputedStyle(el);
+  const div = document.createElement('div');
+  const style = div.style;
+  const props = ['direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize', 'fontFamily', 'lineHeight', 'textAlign', 'textTransform', 'textIndent', 'letterSpacing', 'wordSpacing'];
+  style.position = 'absolute';
+  style.visibility = 'hidden';
+  style.whiteSpace = el.nodeName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
+  style.wordWrap = 'break-word';
+  style.top = '0';
+  style.left = '0';
+  props.forEach((p) => { style[p] = computed[p]; });
+  div.textContent = el.value.slice(0, index);
+  const marker = document.createElement('span');
+  marker.textContent = el.value.slice(index, index + 1) || '.';
+  div.appendChild(marker);
+  document.body.appendChild(div);
+  const top = marker.offsetTop + (parseFloat(computed.borderTopWidth) || 0);
+  const left = marker.offsetLeft + (parseFloat(computed.borderLeftWidth) || 0);
+  const lh = parseFloat(computed.lineHeight);
+  const height = Number.isFinite(lh) ? lh : (parseFloat(computed.fontSize) || 16) * 1.45;
+  div.remove();
+  const rect = el.getBoundingClientRect();
+  return {
+    x: rect.left + left - el.scrollLeft,
+    y: rect.top + top - el.scrollTop,
+    height
+  };
+}
+function hideRedPop() {
+  const pop = $('#red-pop');
+  if (!pop) return;
+  pop.classList.remove('show');
+  pop.setAttribute('aria-hidden', 'true');
+}
+function positionRedPop(el) {
+  const pop = $('#red-pop');
+  if (!pop) return;
+  let x, y, h;
+  try {
+    const pt = caretViewportPoint(el, el.selectionEnd);
+    x = pt.x;
+    y = pt.y + pt.height + 6;
+    h = pt.height;
+  } catch (e) {
+    const r = el.getBoundingClientRect();
+    x = r.left + 8;
+    y = r.bottom + 6;
+    h = 20;
+  }
+  pop.classList.add('show');
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  if (x + pw > window.innerWidth - 8) x = window.innerWidth - pw - 8;
+  if (x < 8) x = 8;
+  if (y + ph > window.innerHeight - 8) y = Math.max(8, y - h - ph - 12);
+  pop.style.left = Math.round(x) + 'px';
+  pop.style.top = Math.round(y) + 'px';
+}
+function refreshRedPop() {
+  const pop = $('#red-pop');
+  const btn = $('#red-pop-btn');
+  if (!pop || !btn) return;
+  const el = document.activeElement;
+  if (!isRedField(el)) { hideRedPop(); return; }
+  const a = el.selectionStart, b = el.selectionEnd;
+  if (a == null || a === b) { hideRedPop(); return; }
+  lastRichField = el;
+  btn.textContent = findRedSpan(el.value, a, b) ? '取消标红' : '标红';
+  pop.setAttribute('aria-hidden', 'false');
+  positionRedPop(el);
+}
+let redPointerSelecting = false;
+function bindRedPop() {
+  const pop = $('#red-pop');
+  if (!pop || pop.dataset.bound) return;
+  pop.dataset.bound = '1';
+  pop.addEventListener('mousedown', (e) => e.preventDefault());
+  pop.addEventListener('click', () => {
+    const el = isRedField(document.activeElement) ? document.activeElement : lastRichField;
+    if (!applyRedToggle(el)) return;
+    refreshRedPop();
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (e.target.closest && e.target.closest('#red-pop')) return;
+    redPointerSelecting = true;
+  });
+  document.addEventListener('pointerup', () => {
+    redPointerSelecting = false;
+    requestAnimationFrame(refreshRedPop);
+  });
+  document.addEventListener('selectionchange', () => {
+    if (redPointerSelecting) return;
+    refreshRedPop();
+  });
+  document.addEventListener('keyup', (e) => {
+    if (isRedField(e.target) || e.key === 'Escape') {
+      if (e.key === 'Escape') hideRedPop();
+      else refreshRedPop();
+    }
+  });
+  document.querySelector('.panel')?.addEventListener('scroll', () => {
+    if ($('#red-pop')?.classList.contains('show')) refreshRedPop();
+  }, { passive: true });
 }
 
 function escapeAttr(s) {
@@ -1040,6 +1189,7 @@ function bindEvents() {
   $('#btn-gx-sample')?.addEventListener('click', loadGuoxinSample);
   $('#btn-gx-red')?.addEventListener('mousedown', (e) => e.preventDefault()); // keep selection
   $('#btn-gx-red')?.addEventListener('click', markRedSelection);
+  bindRedPop();
   $('#gx-title')?.addEventListener('input', syncFromFormAndPreview);
   $$('#orient-seg button').forEach((b) => b.addEventListener('click', () => setOrientation(b.dataset.o)));
   $('#gx-title')?.addEventListener('focus', (e) => { lastRichField = e.target; });

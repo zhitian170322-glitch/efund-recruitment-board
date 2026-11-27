@@ -1,8 +1,17 @@
 /* 客户端导出：超清 PNG + JPG */
 
 const PNG_TARGET_WIDTH = 9000;
-const JPG_BASE_WIDTH = 4000;
-function jpgTargetWidth() { const w = window.currentBoardWidth || 0; return w > 3000 ? 6000 : (w > 2000 ? 5000 : JPG_BASE_WIDTH); }
+// JPG：比原先 4000/5000/6000 更宽，捕获倍率最高 4×，起步质量 0.97。
+// 文件必须低于 10MB（十进制，避免系统显示成 10.0MB 以上）。先降质量，质量降到 0.72 仍超限再缩小宽度。
+const JPG_MAX_BYTES = 10 * 1000 * 1000;
+const JPG_START_QUALITY = 0.97;
+const JPG_QUALITY_FLOOR = 0.72;
+function jpgTargetWidth() {
+  const w = window.currentBoardWidth || 0;
+  if (w > 3000) return 8400;
+  if (w > 2000) return 7200;
+  return 6000;
+}
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -179,6 +188,51 @@ async function exportPNG() {
   }
 }
 
+function jpgQualities() {
+  const list = [];
+  for (let q = JPG_START_QUALITY; q >= JPG_QUALITY_FLOOR - 1e-9; q -= 0.03) {
+    list.push(Math.round(q * 100) / 100);
+  }
+  return list;
+}
+
+// 不把截图像素放大（放大会更糊、文件更大）。超限时先降质量，再缩小宽度，并尽量留在高质量。
+async function jpgBlobUnderCap(dataUrl, targetWidth) {
+  const img = await loadImage(dataUrl);
+  let width = Math.min(targetWidth, img.naturalWidth);
+  if (!width) throw new Error('图片尺寸无效');
+  const qualities = jpgQualities();
+  let steps = 0;
+  while (width >= 900 && steps < 14) {
+    steps += 1;
+    for (let i = 0; i < qualities.length; i++) {
+      const q = qualities[i];
+      if (i > 0 || steps > 1) {
+        window.BoardApp.setStatus(i > 0
+          ? `JPG 超过 10MB，正在降低质量（${Math.round(q * 100)}%）…`
+          : `JPG 仍超过 10MB，正在缩小宽度（${width}px）…`);
+        await delay(16);
+      }
+      const blob = await resizeToWidth(dataUrl, width, 'image/jpeg', q);
+      if (blob.size < JPG_MAX_BYTES) return { blob, width, quality: q };
+    }
+    const next = Math.round(width * 0.85);
+    if (next >= width) break;
+    width = next;
+  }
+  let w = Math.max(640, width);
+  for (const q of [0.6, 0.45, 0.32]) {
+    const blob = await resizeToWidth(dataUrl, w, 'image/jpeg', q);
+    if (blob.size < JPG_MAX_BYTES) return { blob, width: w, quality: q };
+    w = Math.max(640, Math.round(w * 0.8));
+  }
+  throw new Error('无法把 JPG 压到 10MB 以下');
+}
+
+function formatJpgMb(bytes) {
+  return (bytes / 1e6).toFixed(2) + 'MB';
+}
+
 async function exportJPG() {
   const btn = document.getElementById('btn-jpg');
   try {
@@ -190,13 +244,15 @@ async function exportJPG() {
     const doc = getBoardDocument();
     const root = getCaptureRoot(doc);
     const cssW = (root.scrollWidth || 1400) + EXPORT_PAD * 2;
-    const preferred = Math.min(3, Math.max(2, Math.round(jpgTargetWidth() / cssW)));
+    const target = jpgTargetWidth();
+    const preferred = Math.min(4, Math.max(3, Math.round(target / cssW)));
 
     const { dataUrl, scale } = await tryCapture(root, preferred);
-    const blob = await resizeToWidth(dataUrl, jpgTargetWidth(), 'image/jpeg', 0.92);
+    const { blob, width } = await jpgBlobUnderCap(dataUrl, target);
+    if (blob.size >= JPG_MAX_BYTES) throw new Error('JPG 仍不低于 10MB');
     const state = window.BoardApp.getState();
     downloadBlob(blob, stampName(state.date, 'jpg'));
-    window.BoardApp.setStatus(`JPG 已下载（渲染 ${scale}×，宽 ${jpgTargetWidth()}px）`);
+    window.BoardApp.setStatus(`JPG 已下载（渲染 ${scale}×，宽 ${width}px，${formatJpgMb(blob.size)}）`);
   } catch (e) {
     console.error(e);
     window.BoardApp.setStatus('JPG 导出失败：' + (e.message || e), true);
